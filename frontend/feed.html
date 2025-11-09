@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>BiblioNet Feed</title>
+  <link rel="stylesheet" href="css/feed.css">
+</head>
+<body>
+  <h1>📚 BiblioNet Akış</h1>
+  <div id="feed-container"></div>
+
+  <script type="module">
+    import { getItems } from "./js/api.js";
+
+    async function loadFeed() {
+      const container = document.getElementById("feed-container");
+      try {
+        const items = await getItems();
+        if (items.length === 0) {
+          container.innerHTML = "<p>Henüz içerik yok 📭</p>";
+          return;
+        }
+
+        container.innerHTML = items.map(i => `
+          <div class="card">
+            <img src="${i.poster_url}" alt="${i.title}" />
+            <h2>${i.title}</h2>
+            <p>${i.description || ""}</p>
+            <small>${i.item_type} • ${i.year}</small>
+          </div>
+        `).join("");
+      } catch (err) {
+        container.innerHTML = `<p style="color:red">Hata: ${err.message}</p>`;
+      }
+    }
+
+    loadFeed();
+  </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>İçerik Detayı</title>
+</head>
+<body>
+  <div id="item"></div>
+  <div id="reviews"></div>
+
+  <form id="reviewForm">
+    <textarea id="text" placeholder="Yorum yaz..."></textarea>
+    <button type="submit">Gönder</button>
+  </form>
+
+  <script type="module">
+    import { getItemById, getReviews, postReview } from "./js/api.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get("id") || 1; // test için id=1
+
+    async function loadItem() {
+      const item = await getItemById(itemId);
+      document.getElementById("item").innerHTML = `
+        <h1>${item.title}</h1>
+        <p>${item.description}</p>
+      `;
+    }
+
+    async function loadReviews() {
+      const reviews = await getReviews(itemId);
+      document.getElementById("reviews").innerHTML = reviews.map(r => `
+        <div class="review">
+          <p>${r.review_text}</p>
+          <small>${r.created_at}</small>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("reviewForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const text = document.getElementById("text").value;
+      await postReview({ user_id: 1, item_id: Number(itemId), review_text: text });
+      document.getElementById("text").value = "";
+      await loadReviews();
+    });
+
+    loadItem();
+    loadReviews();
+  </script>
+</body>
+</html>
