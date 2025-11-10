@@ -56,3 +56,15 @@ class ActivityOut(BaseModel):
 
 	model_config = {"from_attributes": True}
 
+
+class ActivityWithDetailsOut(BaseModel):
+	"""Activity with joined user and item details (denormalized for convenience)"""
+	activity_id: int
+	activity_type: str
+	created_at: Optional[datetime] = None
+	username: Optional[str] = None
+	title: Optional[str] = None
+	item_type: Optional[str] = None
+
+	model_config = {"from_attributes": True}
+

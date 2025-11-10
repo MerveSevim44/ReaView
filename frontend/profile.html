@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil • BiblioNet</title>
+  <link rel="stylesheet" href="./css/profile.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="profile-header">
+      <h1>👤 Profil</h1>
+      <button id="mainFollowBtn" class="btn-primary btn-follow">
+        Takip Et
+      </button>
+    </header>
+    
+    <div class="profile-layout">
+      <!-- Left Sidebar: Profile Info -->
+      <aside class="profile-sidebar">
+        <div class="card profile-card" id="profileBox">
+          <div class="loading">Yükleniyor...</div>
+        </div>
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="profile-content">
+        <!-- Follow Section -->
+        <section class="card follow-section">
+          <h2>👥 Takip & Takipçiler</h2>
+          <div class="follow-buttons">
+            <button id="followingBtn" class="btn-secondary">
+              <span class="btn-icon">👥</span>
+              Takip Ettikleri
+            </button>
+            <button id="followersBtn" class="btn-secondary">
+              <span class="btn-icon">👥</span>
+              Takipçileri
+            </button>
+          </div>
+          <div id="followList" class="follow-list"></div>
+        </section>
+
+        <!-- Activities Section -->
+        <section class="card activities-section">
+          <h2>📊 Aktiviteler</h2>
+          <div id="activities" class="content-box">
+            <div class="loading">Yükleniyor...</div>
+          </div>
+        </section>
+
+        <!-- Reviews Section -->
+        <section class="card reviews-section">
+          <h2>💬 Yorumlar</h2>
+          <div id="reviews" class="content-box">
+            <div class="loading">Yükleniyor...</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Explore Users Section (Hidden by default) -->
+    <section id="exploreSection" class="explore-section">
+      <h2>🔍 Kullanıcıları Keşfet</h2>
+      <div id="exploreUsers" class="explore-grid"></div>
+    </section>
+  </div>
+
+  <script type="module" src="./js/profile.js"></script>
+</body>
+</html>

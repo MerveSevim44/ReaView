@@ -2,39 +2,74 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>BiblioNet Feed</title>
+  <title>BiblioNet Akış</title>
   <link rel="stylesheet" href="css/feed.css">
+  <style>
+    body { font-family: sans-serif; margin: 30px; }
+    h1 { color: #2a5; }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .card small {
+      color: #777;
+    }
+  </style>
 </head>
 <body>
-  <h1>📚 BiblioNet Akış</h1>
-  <div id="feed-container"></div>
+  <h1>📚 ReaView Akış</h1>
+  <div id="feed-container">Yükleniyor...</div>
 
   <script type="module">
-    import { getItems } from "./js/api.js";
+    const API_URL = "http://127.0.0.1:8000";
+
+    // Map activity types to Turkish descriptions
+    const activityDescriptions = {
+      "review": "yorum yaptı",
+      "rating": "puan verdi",
+      "list_add": "bir içeriği listesine ekledi",
+      "follow": "kullanıcıyı takip etti",
+      "comment": "yorum yaptı"
+    };
 
     async function loadFeed() {
       const container = document.getElementById("feed-container");
       try {
-        const items = await getItems();
-        if (items.length === 0) {
-          container.innerHTML = "<p>Henüz içerik yok 📭</p>";
+        // Use /detailed endpoint to get username and title along with activity
+        const res = await fetch(`${API_URL}/feed/detailed`);
+        if (!res.ok) throw new Error(`Sunucu hatası: ${res.status}`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          container.innerHTML = "<p>Henüz aktivite yok 📭</p>";
           return;
         }
 
-        container.innerHTML = items.map(i => `
+        // Render activities as cards with full details
+        container.innerHTML = data.map(activity => `
           <div class="card">
-            <img src="${i.poster_url}" alt="${i.title}" />
-            <h2>${i.title}</h2>
-            <p>${i.description || ""}</p>
-            <small>${i.item_type} • ${i.year}</small>
+            <b>${activity.username || "Kullanıcı"}</b>
+            ${activityDescriptions[activity.activity_type] || "bir işlem yaptı"}
+            <br>
+            <em>${activity.title || "—"}</em>
+            <br>
+            <small>${new Date(activity.created_at).toLocaleString("tr-TR")}</small>
           </div>
         `).join("");
       } catch (err) {
         container.innerHTML = `<p style="color:red">Hata: ${err.message}</p>`;
+        console.error("Feed yükleme hatası:", err);
       }
     }
 
+    // Load feed when page opens
     loadFeed();
+    
+    // Optional: Auto-refresh every 10 seconds
+    // setInterval(loadFeed, 10000);
   </script>
 </body>
 </html>

@@ -37,3 +37,11 @@ class Activity(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     item_id = Column(Integer, ForeignKey("items.item_id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Follow(Base):
+    __tablename__ = "follows"
+
+    follower_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True, nullable=False)
+    followee_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True, nullable=False)
+    followed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

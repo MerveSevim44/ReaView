@@ -31,3 +31,22 @@ export async function getReviews(itemId) {
   const res = await fetch(`${API_URL}/reviews/item/${itemId}`);
   return await res.json();
 }
+
+
+export async function getUser(userId) {
+  const r = await fetch(`${API_URL}/users/${userId}`);
+  if (!r.ok) throw new Error("Kullanıcı bulunamadı");
+  return r.json();
+}
+
+export async function getUserReviews(userId) {
+  const r = await fetch(`${API_URL}/users/${userId}/reviews`);
+  if (!r.ok) throw new Error("Yorumlar alınamadı");
+  return r.json();
+}
+
+export async function getUserActivities(userId) {
+  const r = await fetch(`${API_URL}/users/${userId}/activities`);
+  if (!r.ok) throw new Error("Aktiviteler alınamadı");
+  return r.json();
+}
