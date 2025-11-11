@@ -1,0 +1,425 @@
+/* frontend/css/feed.css */
+/* Feed page styling following project structure and design patterns */
+
+/* Reset & Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+  color: #333;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Main Content */
+main {
+  padding: 40px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+main h1 {
+  color: white;
+  margin-bottom: 30px;
+  font-size: 32px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Feed Container */
+#feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Activity Card */
+.card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.activity-card {
+  border-left: 4px solid #667eea;
+}
+
+.activity-card:hover {
+  border-left-color: #764ba2;
+}
+
+/* Activity Header */
+.activity-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.activity-header strong {
+  color: #667eea;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.activity-action {
+  color: #666;
+  font-size: 15px;
+}
+
+/* Activity Item Title */
+.activity-item-title {
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-left: 3px solid #667eea;
+  border-radius: 6px;
+  color: #555;
+  font-style: italic;
+  word-break: break-word;
+}
+
+/* Activity Timestamp */
+.activity-timestamp {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.activity-timestamp small {
+  color: #999;
+  font-size: 12px;
+}
+
+/* Activity Actions */
+.activity-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+  justify-content: flex-start;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: #f8f9fa;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s ease;
+  border: 1px solid #e9ecef;
+}
+
+.btn:hover {
+  background: #e9ecef;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.btn-like {
+  flex: 0 1 auto;
+}
+
+.btn-like:hover {
+  background: #fff5f7;
+  border-color: #e74c3c;
+}
+
+.btn-like.liked {
+  background: #ffe0e6;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.btn-like.liked .like-icon {
+  animation: heartBeat 0.3s ease;
+}
+
+.btn-comment {
+  flex: 0 1 auto;
+}
+
+.btn-comment:hover {
+  background: #eef4ff;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.btn-share {
+  flex: 0 1 auto;
+}
+
+.btn-share:hover {
+  background: #f0f9ff;
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.like-icon,
+.comment-icon,
+.share-icon {
+  font-size: 16px;
+}
+
+.like-count,
+.comment-count {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Heart beat animation for likes */
+@keyframes heartBeat {
+  0% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.3);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.3);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive buttons */
+@media (max-width: 768px) {
+  .activity-actions {
+    gap: 6px;
+  }
+
+  .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .like-icon,
+  .comment-icon,
+  .share-icon {
+    font-size: 14px;
+  }
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: white;
+  font-size: 16px;
+}
+
+.loading::before {
+  content: "⏳ ";
+  font-size: 24px;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  color: white;
+  padding: 60px 20px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.empty-state::before {
+  content: "📭\A";
+  white-space: pre;
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+/* Error Message */
+.error-message {
+  background: #f8d7da;
+  border: 2px solid #f5c6cb;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 20px 0;
+  color: #721c24;
+}
+
+.error-message h3 {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.error-message p {
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.error-message small {
+  display: block;
+  color: #a94442;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: slideDown 0.4s ease forwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }
+.card:nth-child(5) { animation-delay: 0.5s; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+
+  main {
+    padding: 20px 12px;
+  }
+
+  main h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  #feed-container {
+    gap: 12px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .activity-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .activity-item-title {
+    margin: 10px 0;
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+    font-size: 14px;
+  }
+
+  .error-message {
+    padding: 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    padding: 16px 8px;
+  }
+
+  main h1 {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .activity-header strong {
+    font-size: 14px;
+  }
+
+  .activity-action {
+    font-size: 13px;
+  }
+
+  .activity-timestamp small {
+    font-size: 11px;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(135deg, #4c1d95 0%, #2d1b4e 100%);
+    color: #e0e0e0;
+  }
+
+  .card {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  .activity-header strong {
+    color: #9bc5ff;
+  }
+
+  .activity-action {
+    color: #b0b0b0;
+  }
+
+  .activity-item-title {
+    background: #1f1f1f;
+    color: #d0d0d0;
+    border-left-color: #667eea;
+  }
+
+  .activity-timestamp small {
+    color: #808080;
+  }
+
+  .error-message {
+    background: #3c2a2a;
+    border-color: #5c3a3a;
+    color: #ff9999;
+  }
+}

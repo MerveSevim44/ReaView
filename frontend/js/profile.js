@@ -1,5 +1,5 @@
 // profile.js
-import { getUser, getUserReviews, getUserActivities } from "./api.js";
+import { getUser, getUserReviews, getUserActivities, API_URL } from "./api.js";
 
 // Current logged-in user (hardcoded for now)
 const currentUserId = 1;
@@ -146,7 +146,7 @@ function renderReview(review) {
 // === LOAD FOLLOWING STATUS ===
 async function loadFollowingStatus() {
   try {
-    const res = await fetch(`http://127.0.0.1:8000/users/${currentUserId}/following`);
+    const res = await fetch(`${API_URL}/users/${currentUserId}/following`);
     
     if (res.ok) {
       const following = await res.json();
@@ -183,8 +183,8 @@ async function toggleFollow() {
   const isFollowing = followingStatus[profileUserId];
   const method = isFollowing ? "DELETE" : "POST";
   const endpoint = isFollowing 
-    ? `http://127.0.0.1:8000/users/${profileUserId}/unfollow?follower_id=${currentUserId}`
-    : `http://127.0.0.1:8000/users/${profileUserId}/follow?follower_id=${currentUserId}`;
+    ? `${API_URL}/users/${profileUserId}/unfollow?follower_id=${currentUserId}`
+    : `${API_URL}/users/${profileUserId}/follow?follower_id=${currentUserId}`;
 
   followBtn.disabled = true;
 
@@ -218,7 +218,7 @@ async function loadFollowing() {
   followListMount.innerHTML = '<div class="loading">Yükleniyor...</div>';
   
   try {
-    const res = await fetch(`http://127.0.0.1:8000/users/${profileUserId}/following`);
+    const res = await fetch(`${API_URL}/users/${profileUserId}/following`);
     
     if (!res.ok) throw new Error("API hatası");
     
@@ -240,7 +240,7 @@ async function loadFollowers() {
   followListMount.innerHTML = '<div class="loading">Yükleniyor...</div>';
   
   try {
-    const res = await fetch(`http://127.0.0.1:8000/users/${profileUserId}/followers`);
+    const res = await fetch(`${API_URL}/users/${profileUserId}/followers`);
     
     if (!res.ok) throw new Error("API hatası");
     
@@ -292,8 +292,8 @@ async function handleFollowClick(e) {
   const isFollowing = followingStatus[userId];
   const method = isFollowing ? "DELETE" : "POST";
   const endpoint = isFollowing 
-    ? `http://127.0.0.1:8000/users/${userId}/unfollow?follower_id=${currentUserId}`
-    : `http://127.0.0.1:8000/users/${userId}/follow?follower_id=${currentUserId}`;
+    ? `${API_URL}/users/${userId}/unfollow?follower_id=${currentUserId}`
+    : `${API_URL}/users/${userId}/follow?follower_id=${currentUserId}`;
 
   button.disabled = true;
 

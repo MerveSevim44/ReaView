@@ -28,4 +28,16 @@ def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
     db.add(new_item)
     db.commit()
     db.refresh(new_item)
-    return new_item    
+    return new_item
+
+# 4️⃣ Favorilere ekle (dummy endpoint - would need favorites table)
+@router.post("/{item_id}/favorite")
+def add_to_favorite(item_id: int, user_id: dict = None):
+    """Add item to user's favorites"""
+    return {"message": "İçerik favorilerinize eklendi!", "item_id": item_id}
+
+# 5️⃣ Listeye ekle (dummy endpoint - would need lists table)
+@router.post("/{item_id}/add-to-list")
+def add_to_list(item_id: int, user_id: dict = None):
+    """Add item to user's list"""
+    return {"message": "İçerik listeme eklendi!", "item_id": item_id}

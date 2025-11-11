@@ -9,15 +9,10 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-	item_type: str = 'book'  # 'movie' or 'book'
+	item_type: str = 'book'
 	year: Optional[int] = None
 	poster_url: Optional[str] = None
-	genres: Optional[str] = None
-	authors: Optional[str] = None  # For books
-	page_count: Optional[int] = None  # For books
-	director: Optional[str] = None  # For movies
-	actors: Optional[str] = None  # For movies
-	external_api_source: Optional[str] = None
+	external_api_id: Optional[str] = None
 
 
 class ItemOut(ItemBase):
@@ -25,14 +20,8 @@ class ItemOut(ItemBase):
 	item_type: str
 	year: Optional[int] = None
 	poster_url: Optional[str] = None
-	genres: Optional[str] = None
-	authors: Optional[str] = None
-	page_count: Optional[int] = None
-	director: Optional[str] = None
-	actors: Optional[str] = None
+	external_api_id: Optional[str] = None
 	created_at: Optional[datetime] = None
-	updated_at: Optional[datetime] = None
-	external_api_source: Optional[str] = None
 
 	model_config = {"from_attributes": True}
 
@@ -49,6 +38,7 @@ class ReviewOut(BaseModel):
 	review_text: str
 	# Use a datetime type so Pydantic accepts SQLAlchemy datetime objects
 	created_at: Optional[datetime] = None
+	username: Optional[str] = None
 
 	model_config = {"from_attributes": True}
 

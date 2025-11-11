@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from ..database import get_db
 
 router = APIRouter()
@@ -13,7 +14,7 @@ def get_feed(
 ):
     # Eğer user_id belirtilmemişse -> herkesi getir
     if user_id is None:
-        query = """
+        query = text("""
         SELECT a.activity_id, a.activity_type, a.created_at,
                u.username, i.title, i.item_type
         FROM activities a
@@ -21,13 +22,13 @@ def get_feed(
         LEFT JOIN items i ON i.item_id = a.item_id
         ORDER BY a.created_at DESC
         LIMIT 20
-        """
+        """)
         result = db.execute(query).fetchall()
         return [dict(r._mapping) for r in result]
 
     # Eğer user_id belirtilmişse -> sadece takip ettiklerini getir
     else:
-        query = """
+        query = text("""
         SELECT a.activity_id, a.activity_type, a.created_at,
                u.username, i.title, i.item_type
         FROM activities a
@@ -38,6 +39,6 @@ def get_feed(
         )
         ORDER BY a.created_at DESC
         LIMIT 20
-        """
+        """)
         result = db.execute(query, {"uid": user_id}).fetchall()
         return [dict(r._mapping) for r in result]

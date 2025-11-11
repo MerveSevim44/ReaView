@@ -75,46 +75,8 @@
     </div>
   </main>
 
-  <!-- Load and Display Feed -->
-  <script type="module">
-    const API_URL = "http://127.0.0.1:8000";
-
-    const activityDescriptions = {
-      "review": "yorum yaptı",
-      "rating": "puan verdi",
-      "list_add": "bir içeriği listesine ekledi",
-      "follow": "kullanıcıyı takip etti",
-      "comment": "yorum yaptı"
-    };
-
-    async function loadFeed() {
-      const container = document.getElementById("feed-container");
-      try {
-        const res = await fetch(`${API_URL}/feed/detailed`);
-        if (!res.ok) throw new Error(`Sunucu hatası: ${res.status}`);
-        const data = await res.json();
-
-        if (!data || data.length === 0) {
-          container.innerHTML = "<p style='text-align: center; color: #999;'>Henüz aktivite yok 📭</p>";
-          return;
-        }
-
-        container.innerHTML = data.map(activity => `
-          <div class="card">
-            <b>${activity.username || "Kullanıcı"}</b>
-            ${activityDescriptions[activity.activity_type] || "bir işlem yaptı"}
-            <em>${activity.title || "—"}</em>
-            <small>${new Date(activity.created_at).toLocaleString("tr-TR")}</small>
-          </div>
-        `).join("");
-      } catch (err) {
-        container.innerHTML = `<p style="color: #e74c3c; text-align: center;">❌ Hata: ${err.message}</p>`;
-        console.error("Feed yükleme hatası:", err);
-      }
-    }
-
-    loadFeed();
-  </script>
+  <!-- Load Feed Module -->
+  <script type="module" src="./js/feed.js"></script>
 
   <!-- Service Worker for offline support -->
   <script>
