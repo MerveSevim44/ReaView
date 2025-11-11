@@ -2,31 +2,83 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>BiblioNet Akış</title>
-  <link rel="stylesheet" href="css/feed.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Akış • BiblioNet</title>
+  
+  <!-- Page-specific CSS -->
+  <link rel="stylesheet" href="./css/feed.css">
+  
   <style>
-    body { font-family: sans-serif; margin: 30px; }
-    h1 { color: #2a5; }
-    .card {
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    main {
+      padding: 40px 20px;
+      max-width: 900px;
+      margin: 0 auto;
     }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    #feed-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+      border-color: #667eea;
+    }
+
+    .card b {
+      color: #333;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .card em {
+      color: #666;
+      display: block;
+      margin: 8px 0;
+      font-style: italic;
+    }
+
     .card small {
-      color: #777;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
     }
   </style>
 </head>
 <body>
-  <h1>📚 ReaView Akış</h1>
-  <div id="feed-container">Yükleniyor...</div>
+  <!-- Main Content -->
+  <main id="main-content">
+    <h1>📰 Akış</h1>
+    <div id="feed-container">
+      <div class="loading">Yükleniyor...</div>
+    </div>
+  </main>
 
+  <!-- Load and Display Feed -->
   <script type="module">
     const API_URL = "http://127.0.0.1:8000";
 
-    // Map activity types to Turkish descriptions
     const activityDescriptions = {
       "review": "yorum yaptı",
       "rating": "puan verdi",
@@ -38,38 +90,39 @@
     async function loadFeed() {
       const container = document.getElementById("feed-container");
       try {
-        // Use /detailed endpoint to get username and title along with activity
         const res = await fetch(`${API_URL}/feed/detailed`);
         if (!res.ok) throw new Error(`Sunucu hatası: ${res.status}`);
         const data = await res.json();
 
         if (!data || data.length === 0) {
-          container.innerHTML = "<p>Henüz aktivite yok 📭</p>";
+          container.innerHTML = "<p style='text-align: center; color: #999;'>Henüz aktivite yok 📭</p>";
           return;
         }
 
-        // Render activities as cards with full details
         container.innerHTML = data.map(activity => `
           <div class="card">
             <b>${activity.username || "Kullanıcı"}</b>
             ${activityDescriptions[activity.activity_type] || "bir işlem yaptı"}
-            <br>
             <em>${activity.title || "—"}</em>
-            <br>
             <small>${new Date(activity.created_at).toLocaleString("tr-TR")}</small>
           </div>
         `).join("");
       } catch (err) {
-        container.innerHTML = `<p style="color:red">Hata: ${err.message}</p>`;
+        container.innerHTML = `<p style="color: #e74c3c; text-align: center;">❌ Hata: ${err.message}</p>`;
         console.error("Feed yükleme hatası:", err);
       }
     }
 
-    // Load feed when page opens
     loadFeed();
-    
-    // Optional: Auto-refresh every 10 seconds
-    // setInterval(loadFeed, 10000);
+  </script>
+
+  <!-- Service Worker for offline support -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js")
+        .then(reg => console.log("✅ Service Worker registered"))
+        .catch(err => console.warn("Service Worker failed:", err));
+    }
   </script>
 </body>
 </html>

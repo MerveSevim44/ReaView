@@ -9,16 +9,31 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-	pass
+	item_type: str = 'book'  # 'movie' or 'book'
+	year: Optional[int] = None
+	poster_url: Optional[str] = None
+	genres: Optional[str] = None
+	authors: Optional[str] = None  # For books
+	page_count: Optional[int] = None  # For books
+	director: Optional[str] = None  # For movies
+	actors: Optional[str] = None  # For movies
+	external_api_source: Optional[str] = None
 
 
 class ItemOut(ItemBase):
 	item_id: int
+	item_type: str
+	year: Optional[int] = None
+	poster_url: Optional[str] = None
+	genres: Optional[str] = None
+	authors: Optional[str] = None
+	page_count: Optional[int] = None
+	director: Optional[str] = None
+	actors: Optional[str] = None
+	created_at: Optional[datetime] = None
+	updated_at: Optional[datetime] = None
+	external_api_source: Optional[str] = None
 
-	# Pydantic v2: use `model_config` with `from_attributes=True` instead of
-	# the old `Config.orm_mode`. This removes the compatibility warning.
-	# If you ever need to support pydantic v1 and v2 simultaneously, consider
-	# a small compatibility helper or pin to a single pydantic major version.
 	model_config = {"from_attributes": True}
 
 class ReviewCreate(BaseModel):

@@ -2,51 +2,348 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <title>İçerik Detayı</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İçerik • BiblioNet</title>
+  
+  <style>
+    main {
+      padding: 40px 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .item-header {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .item-poster {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      object-fit: cover;
+    }
+
+    .item-info h1 {
+      font-size: 32px;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .item-meta {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .item-description {
+      line-height: 1.6;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .btn-secondary:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    .reviews-section {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .reviews-section h2 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .review-form {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .review-form textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .review-form button {
+      margin-top: 12px;
+    }
+
+    .review-item {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .review-author {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .review-text {
+      color: #555;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .review-date {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .loading {
+      text-align: center;
+      color: #999;
+      padding: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .item-header {
+        grid-template-columns: 1fr;
+      }
+
+      .item-info h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div id="item"></div>
-  <div id="reviews"></div>
-
-  <form id="reviewForm">
-    <textarea id="text" placeholder="Yorum yaz..."></textarea>
-    <button type="submit">Gönder</button>
-  </form>
-
-  <script type="module">
-    import { getItemById, getReviews, postReview } from "./js/api.js";
-
-    const params = new URLSearchParams(window.location.search);
-    const itemId = params.get("id") || 1; // test için id=1
-
-    async function loadItem() {
-      const item = await getItemById(itemId);
-      document.getElementById("item").innerHTML = `
-        <h1>${item.title}</h1>
-        <p>${item.description}</p>
-      `;
-    }
-
-    async function loadReviews() {
-      const reviews = await getReviews(itemId);
-      document.getElementById("reviews").innerHTML = reviews.map(r => `
-        <div class="review">
-          <p>${r.review_text}</p>
-          <small>${r.created_at}</small>
+  <main id="main-content">
+    <!-- Item Details -->
+    <div class="item-header" id="itemBox">
+      <img src="https://via.placeholder.com/300x400?text=Loading" alt="Poster" class="item-poster" />
+      <div class="item-info">
+        <h1 id="itemTitle">İçerik Yükleniyor...</h1>
+        <div class="item-meta">
+          <span id="itemType">—</span>
+          <span id="itemYear">—</span>
+          <span id="itemRating">⭐ 0.0</span>
         </div>
-      `).join("");
+        <div class="item-description" id="itemDesc">—</div>
+        <div class="item-actions">
+          <button class="btn btn-primary" id="addToListBtn">Listeme Ekle</button>
+          <button class="btn btn-secondary" id="favoriteBtn">Favorile</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <section class="reviews-section" id="reviewsSection">
+      <h2>💬 Yorumlar</h2>
+      
+      <div class="review-form">
+        <textarea id="reviewText" placeholder="Yorum yaz..."></textarea>
+        <button class="btn btn-primary" id="submitReviewBtn">Gönder</button>
+      </div>
+
+      <div id="reviewsList">
+        <div class="loading">Yorumlar yükleniyor...</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Item Details Logic -->
+  <script type="module">
+    const API_URL = "http://127.0.0.1:8000";
+    let currentItemId = null;
+
+    async function loadItemDetails() {
+      try {
+        // Get item ID from URL query parameter
+        const params = new URLSearchParams(window.location.search);
+        currentItemId = params.get('id') || 1;
+
+        console.log(`Fetching item ${currentItemId} from ${API_URL}/items/${currentItemId}`);
+
+        // Fetch item details
+        const response = await fetch(`${API_URL}/items/${currentItemId}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || `HTTP ${response.status}: İçerik bulunamadı`);
+        }
+        
+        const item = await response.json();
+        console.log('Item loaded:', item);
+
+        // Update page
+        document.title = `${item.title} • BiblioNet`;
+        document.getElementById('itemTitle').textContent = item.title;
+        document.getElementById('itemType').textContent = item.item_type || 'İçerik';
+        document.getElementById('itemYear').textContent = item.year || '—';
+        document.getElementById('itemRating').textContent = `⭐ ${(item.rating || 0).toFixed(1)}`;
+        document.getElementById('itemDesc').textContent = item.description || '—';
+
+        // Load reviews
+        loadReviews(currentItemId);
+      } catch (error) {
+        console.error('Error loading item:', error);
+        document.getElementById('itemBox').innerHTML = `<div class="loading">❌ ${error.message}</div>`;
+      }
     }
 
-    document.getElementById("reviewForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const text = document.getElementById("text").value;
-      await postReview({ user_id: 1, item_id: Number(itemId), review_text: text });
-      document.getElementById("text").value = "";
-      await loadReviews();
+    async function loadReviews(itemId) {
+      try {
+        const response = await fetch(`${API_URL}/reviews/item/${itemId}`);
+        const reviews = await response.json();
+
+        const reviewsList = document.getElementById('reviewsList');
+        if (!reviews || reviews.length === 0) {
+          reviewsList.innerHTML = '<p style="text-align: center; color: #999;">Henüz yorum yok</p>';
+          return;
+        }
+
+        reviewsList.innerHTML = reviews.map(r => `
+          <div class="review-item">
+            <div class="review-author">Kullanıcı #${r.user_id}</div>
+            <div class="review-text">${r.review_text}</div>
+            <div class="review-date">${new Date(r.created_at).toLocaleDateString('tr-TR')}</div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Yorumlar yüklenemedi:', error);
+      }
+    }
+
+    // Submit Review Button
+    document.getElementById('submitReviewBtn').addEventListener('click', async () => {
+      const reviewText = document.getElementById('reviewText').value.trim();
+      
+      if (!reviewText) {
+        alert('Lütfen bir yorum yazınız');
+        return;
+      }
+
+      // Get user ID (for now use a default or get from localStorage if auth exists)
+      const userId = 1; // TODO: Get from auth system
+
+      try {
+        const response = await fetch(`${API_URL}/reviews`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            item_id: currentItemId,
+            review_text: reviewText
+          })
+        });
+
+        if (!response.ok) throw new Error('Yorum gönderilemedi');
+
+        // Clear textarea
+        document.getElementById('reviewText').value = '';
+        
+        // Reload reviews
+        loadReviews(currentItemId);
+        
+        alert('Yorum başarıyla gönderildi!');
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      }
     });
 
-    loadItem();
-    loadReviews();
+    // Add to List Button
+    document.getElementById('addToListBtn').addEventListener('click', async () => {
+      // This would require a List API - for now, create an Activity log
+      try {
+        const response = await fetch(`${API_URL}/feed/activity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            activity_type: 'added_to_list',
+            user_id: 1,
+            item_id: currentItemId
+          })
+        });
+
+        if (response.ok) {
+          alert('İçerik listeme eklendi!');
+        }
+      } catch (error) {
+        alert('Listeme eklenemedi: ' + error.message);
+      }
+    });
+
+    // Favorite Button
+    document.getElementById('favoriteBtn').addEventListener('click', async () => {
+      // This would require a Favorites API - for now, create an Activity log
+      try {
+        const response = await fetch(`${API_URL}/feed/activity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            activity_type: 'favorited',
+            user_id: 1,
+            item_id: currentItemId
+          })
+        });
+
+        if (response.ok) {
+          alert('İçerik favorilerinize eklendi!');
+          document.getElementById('favoriteBtn').style.background = '#667eea';
+          document.getElementById('favoriteBtn').style.color = 'white';
+        }
+      } catch (error) {
+        alert('Favorilere eklenemedi: ' + error.message);
+      }
+    });
+
+    // Load on page open
+    loadItemDetails();
   </script>
 </body>
 </html>
