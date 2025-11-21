@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kayıt Ol • BiblioNet</title>
+  <link rel="stylesheet" href="./css/auth.css" />
+</head>
+<body>
+  <div class="auth-container">
+    <!-- Logo -->
+    <div class="auth-header">
+      <h1>📚 BiblioNet</h1>
+      <p>Kitap severler topluluğu</p>
+    </div>
+
+    <!-- Register Form -->
+    <form id="registerForm" class="auth-form">
+      <h2>Kayıt Ol</h2>
+      
+      <div class="form-group">
+        <label for="username">Kullanıcı Adı</label>
+        <input 
+          type="text" 
+          id="username" 
+          placeholder="Kullanıcı adınız"
+          required
+        />
+        <small>En az 3 karakter olmalıdır</small>
+      </div>
+
+      <div class="form-group">
+        <label for="email">E-posta</label>
+        <input 
+          type="email" 
+          id="email" 
+          placeholder="E-posta adresiniz"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Şifre</label>
+        <input 
+          type="password" 
+          id="password" 
+          placeholder="Şifreniz"
+          required
+        />
+        <small>En az 6 karakter olmalıdır</small>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+
+      <div id="errorMessage" class="message error"></div>
+      <div id="successMessage" class="message success"></div>
+      <div id="loadingMessage" class="message loading">
+        <span class="spinner"></span>
+        Kaydediliyor...
+      </div>
+
+      <div class="form-footer">
+        <p>Hesabın var mı? <a href="./login.html">Giriş yap</a></p>
+      </div>
+    </form>
+  </div>
+
+  <script type="module" src="./js/pages/register.js"></script>
+</body>
+</html>

@@ -6,33 +6,60 @@
   <title>Keşfet • BiblioNet</title>
   
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
     main {
       padding: 40px 20px;
-      max-width: 900px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
     h1 {
       color: #667eea;
       margin-bottom: 30px;
-      font-size: 28px;
+      font-size: 32px;
+      font-weight: 700;
     }
 
-    .search-box {
+    h2 {
+      color: #333;
+      margin-top: 50px;
+      margin-bottom: 20px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    /* ============ ARAMA BÖLÜMÜ ============ */
+    .search-section {
       background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 30px;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 40px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
     .search-box input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #e0e0e0;
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
       border-radius: 8px;
       font-size: 16px;
+      transition: all 0.3s ease;
     }
 
     .search-box input:focus {
@@ -41,152 +68,733 @@
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
+    .search-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .search-btn:active {
+      transform: translateY(0);
+    }
+
+    /* ============ FİLTRELEME BÖLÜMÜ ============ */
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .filter-group label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .filter-group select,
+    .filter-group input {
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-group select:focus,
+    .filter-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .filter-group select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 20px;
+      padding-right: 35px;
+    }
+
+    .clear-filters {
+      align-self: flex-end;
+      margin-top: 15px;
+      background: #f0f0f0;
+      color: #666;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .clear-filters:hover {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    /* ============ SONUÇLAR GRID'İ ============ */
     .results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
     }
 
     .result-card {
       background: white;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       transition: all 0.3s ease;
       cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
     .result-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 6px 14px rgba(102, 126, 234, 0.15);
     }
 
-    .result-card img {
+    .result-card-image {
       width: 100%;
       height: 180px;
-      object-fit: cover;
+      overflow: hidden;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+    }
+
+    .result-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .result-card:hover .result-card-image img {
+      transform: scale(1.05);
+    }
+
+    .result-card-image .type-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
     }
 
     .result-card-info {
-      padding: 16px;
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .result-card-title {
       font-weight: 600;
       color: #333;
-      margin-bottom: 8px;
-      white-space: nowrap;
+      margin-bottom: 4px;
+      font-size: 13px;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      text-overflow: ellipsis;
     }
 
-    .result-card-type {
-      font-size: 12px;
+    .result-card-meta {
+      font-size: 11px;
       color: #999;
       margin-bottom: 8px;
     }
 
+    .result-card-rating {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .rating-stars {
+      color: #ffc107;
+      letter-spacing: 2px;
+    }
+
+    .result-card-buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: auto;
+    }
+
     .result-card-btn {
+      flex: 1;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
       padding: 8px;
       border-radius: 6px;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
-      width: 100%;
       font-weight: 600;
       transition: all 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .result-card-btn:hover {
-      transform: scale(1.02);
+      transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
+    .result-card-btn.info {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .result-card-btn.info:hover {
+      background: #e0e0e0;
+    }
+
+    /* ============ DURUM MESAJLARI ============ */
     .loading {
       text-align: center;
       color: #999;
-      padding: 40px;
+      padding: 60px 20px;
+      font-size: 16px;
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-left: 10px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .auth-message {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border: 1px solid #667eea30;
+      color: #333;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .auth-message h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .auth-message a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .auth-message a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-width: 768px) {
+      main {
+        padding: 20px 15px;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+      }
+
+      .search-box {
+        flex-direction: column;
+      }
+
+      .search-btn {
+        width: 100%;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .results-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
     }
   </style>
 </head>
 <body>
+  <!-- Navbar otomatik olarak eklenecek -->
+
   <main id="main-content">
     <h1>🔍 Keşfet</h1>
     
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Kitap, film veya yazar ara..." />
+    <!-- ARAMA BÖLÜMÜ -->
+    <div class="search-section">
+      <div class="search-box">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Film, kitap, yönetmen, yazar ara..." 
+        />
+        <button class="search-btn" id="searchBtn">🔍 Ara</button>
+      </div>
+
+      <!-- GELİŞMİŞ FİLTRELEME -->
+      <div class="filters">
+        <div class="filter-group">
+          <label for="filterType">Tür</label>
+          <select id="filterType">
+            <option value="">Tümü</option>
+            <option value="movie">🎬 Film</option>
+            <option value="book">📖 Kitap</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterYear">Yıl</label>
+          <input 
+            type="number" 
+            id="filterYear" 
+            placeholder="Örn: 2024"
+            min="1900"
+            max="2100"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="filterRating">Minimum Puan</label>
+          <select id="filterRating">
+            <option value="">Herhangi</option>
+            <option value="8">⭐ 8.0+</option>
+            <option value="7">⭐ 7.0+</option>
+            <option value="6">⭐ 6.0+</option>
+            <option value="5">⭐ 5.0+</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sortBy">Sırala</label>
+          <select id="sortBy">
+            <option value="relevance">Uygunluk</option>
+            <option value="rating">Puana Göre</option>
+            <option value="popularity">Popülarite</option>
+            <option value="newest">En Yeni</option>
+          </select>
+        </div>
+
+        <button class="clear-filters" id="clearFilters">Filtreleri Temizle</button>
+      </div>
     </div>
 
+    <!-- ARAMA SONUÇLARI -->
     <div id="resultsContainer" class="results-grid">
-      <div class="loading">Aramaya başlamak için bir şey yazın</div>
+      <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <p>Aramaya başlamak için yukarıya bir şey yazın ve Ara butonuna tıklayın</p>
+      </div>
+    </div>
+
+    <!-- BÖLÜM 1: EN YÜKSEK PUANLILAN ÜRÜNLER (VITRIN) -->
+    <h2>⭐ En Yüksek Puanlılar</h2>
+    <div id="topRatedContainer" class="results-grid">
+      <div class="loading">Yükleniyor...</div>
+    </div>
+
+    <!-- BÖLÜM 2: EN POPÜLER ÜRÜNLER (VITRIN) -->
+    <h2>🔥 En Popülerler</h2>
+    <div id="mostPopularContainer" class="results-grid">
+      <div class="loading">Yükleniyor...</div>
     </div>
   </main>
 
-  <!-- Search Logic -->
-  <script type="module">
-    const API_URL = "http://127.0.0.1:8000";
-    const searchInput = document.getElementById('searchInput');
-    const resultsContainer = document.getElementById('resultsContainer');
+  <!-- Load Navbar Module -->
+  <script type="module" src="./js/navbar.js"></script>
 
-    searchInput.addEventListener('input', async (e) => {
-      const query = e.target.value.trim();
+  <!-- Search & Browse Logic -->
+  <script type="module">
+    import { sessionManager } from "./js/session.js";
+
+    const API_BASE = "http://127.0.0.1:8000";
+    const API_URL = `${API_BASE}/items`;
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const topRatedContainer = document.getElementById('topRatedContainer');
+    const mostPopularContainer = document.getElementById('mostPopularContainer');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    
+    const filterType = document.getElementById('filterType');
+    const filterYear = document.getElementById('filterYear');
+    const filterRating = document.getElementById('filterRating');
+    const sortBy = document.getElementById('sortBy');
+
+    // ============ SESSION STORAGE: ARAMA SONUÇLARINı KAYDET ============
+    const STORAGE_KEY = 'searchState';
+    
+    const saveSearchState = () => {
+      const state = {
+        query: searchInput.value,
+        results: resultsContainer.innerHTML,
+        filterType: filterType.value,
+        filterYear: filterYear.value,
+        filterRating: filterRating.value,
+        sortBy: sortBy.value
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      console.log('💾 Arama durumu kaydedildi:', state.query);
+    };
+
+    const restoreSearchState = () => {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const state = JSON.parse(saved);
+          searchInput.value = state.query;
+          resultsContainer.innerHTML = state.results;
+          filterType.value = state.filterType;
+          filterYear.value = state.filterYear;
+          filterRating.value = state.filterRating;
+          sortBy.value = state.sortBy;
+          console.log('📂 Arama durumu geri yüklendi:', state.query);
+        } catch (e) {
+          console.error('Arama durumu geri yüklemesi başarısız:', e);
+        }
+      }
+    };
+
+    // Sayfa yüklendiğinde önceki arama sonuçlarını geri yükle
+    window.addEventListener('load', restoreSearchState);
+
+    // ============ RENDER HELPER ============
+    const renderResults = (items, container) => {
+      console.log('🎨 renderResults çağrıldı:', { itemsCount: items?.length, containerClass: container.id });
+      
+      if (!items || items.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">😕</div>
+            <p>Sonuç bulunamadı</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        // Hybrid rating: combined_rating > user_rating > external_rating > 0
+        const rating = item.combined_rating || item.user_rating || item.external_rating || 0;
+        const stars = rating > 0 ? '⭐'.repeat(Math.floor(rating / 2)) + (rating % 2 !== 0 ? '✨' : '') : '';
+        
+        // Rating kaynağını göster
+        let ratingInfo = '';
+        if (item.external_rating && !item.user_rating) {
+          ratingInfo = ` <small style="color: #999; font-size: 0.8em;">(API)</small>`;
+        } else if (item.user_rating && !item.external_rating) {
+          ratingInfo = ` <small style="color: #999; font-size: 0.8em;">(Kullanıcılar)</small>`;
+        } else if (item.external_rating && item.user_rating) {
+          ratingInfo = ` <small style="color: #999; font-size: 0.8em;">(Hibrid)</small>`;
+        }
+        
+        return `
+          <div class="result-card">
+            <div class="result-card-image">
+              <img 
+                src="${item.poster_url || 'https://via.placeholder.com/250x180?text=' + encodeURIComponent(item.title)}" 
+                alt="${item.title}"
+                onerror="this.src='https://via.placeholder.com/250x180?text=No+Image'"
+              />
+              <span class="type-badge">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</span>
+            </div>
+            <div class="result-card-info">
+              <div class="result-card-title">${item.title}</div>
+              <div class="result-card-meta">${item.year || 'Tarih Bilinmiyor'}</div>
+              <div class="result-card-rating">
+                <span class="rating-stars">${stars || 'Henüz Puan Yok'}</span>
+                <span>(${rating ? rating.toFixed(1) : '0'}/10)${ratingInfo}</span>
+              </div>
+              <div class="result-card-buttons">
+                ${item.item_id ? `
+                  <button class="result-card-btn info detail-btn" data-item-id="${item.item_id}">🔍 Detay</button>
+                ` : `
+                  <button class="result-card-btn info detail-api-btn" data-item='${JSON.stringify(item)}'>🔍 Detay</button>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Detay butonuna event listener ekle
+      container.querySelectorAll('.detail-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const itemId = btn.getAttribute('data-item-id');
+          goToDetail(itemId);
+        });
+      });
+
+      // API Detay butonuna event listener ekle
+      container.querySelectorAll('.detail-api-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const item = JSON.parse(btn.getAttribute('data-item'));
+          console.log('📍 API İçeriği Detay:', item);
+          goToDetail(null, item);
+        });
+      });
+    };
+
+    // ============ DETAY SAYFASINA GİT ============
+    const goToDetail = (itemId, itemData = null) => {
+      if (itemData) {
+        // External API verisi - encode et ve gönder
+        const encodedData = encodeURIComponent(JSON.stringify(itemData));
+        window.location.href = `items.html?id=${encodedData}&source=api`;
+      } else {
+        // Database verisi - ID'si kullan
+        window.location.href = `items.html?id=${itemId}`;
+      }
+    };
+
+    // ============ ARAMA FONKSİYONU ============
+    const performSearch = async () => {
+      const query = searchInput.value.trim();
       
       if (query.length < 2) {
-        resultsContainer.innerHTML = '<div class="loading">Aramaya başlamak için bir şey yazın</div>';
+        alert('Lütfen en az 2 karakter yazın');
         return;
       }
 
       resultsContainer.innerHTML = '<div class="loading">Aranıyor...</div>';
 
       try {
-        // Try searching both movies and books - using /external/search endpoint
-        const movieUrl = `${API_URL}/external/search?type=movie&query=${encodeURIComponent(query)}`;
-        const bookUrl = `${API_URL}/external/search?type=book&query=${encodeURIComponent(query)}`;
+        // Hem veritabanından hem external API'den ara
+        const dbUrl = `${API_URL}/search?q=${encodeURIComponent(query)}`;
+        const token = sessionManager.getToken();
+        const headers = token ? { "Authorization": `Bearer ${token}` } : {};
         
-        console.log('Fetching:', movieUrl);
-        console.log('Fetching:', bookUrl);
+        console.log('🔍 Veritabanında aranıyor:', dbUrl);
+        console.log('🔍 External API\'de aranıyor (Film ve Kitap)');
 
-        const moviesResponse = await fetch(movieUrl).catch(err => {
-          console.error('Movie fetch error:', err);
-          return null;
+        // Paralel olarak her ikisini de ara
+        const [dbResponse, movieResponse, bookResponse] = await Promise.all([
+          fetch(dbUrl),
+          fetch(`${API_BASE}/external/search?type=movie&query=${encodeURIComponent(query)}`, { headers }).catch(() => null),
+          fetch(`${API_BASE}/external/search?type=book&query=${encodeURIComponent(query)}`, { headers }).catch(() => null)
+        ]);
+        
+        if (!dbResponse.ok) throw new Error('Veritabanı Arama Hatası');
+
+        const dbResults = await dbResponse.json();
+        const movies = movieResponse?.ok ? await movieResponse.json() : [];
+        const books = bookResponse?.ok ? await bookResponse.json() : [];
+        
+        // Her bir API result'a source bilgisi ekle
+        movies.forEach(movie => {
+          movie.source = 'tmdb';
+          movie.sourceId = `tmdb_${movie.external_api_id || movie.id}`;
+        });
+        books.forEach(book => {
+          book.source = book.provider === 'google' ? 'google_books' : 'openlib';
+          book.sourceId = `${book.source}_${book.external_api_id || book.id}`;
         });
         
-        const booksResponse = await fetch(bookUrl).catch(err => {
-          console.error('Book fetch error:', err);
-          return null;
+        console.log('📚 Veritabanı Sonuçları:', dbResults);
+        console.log('🎬 External API Film Sonuçları:', movies);
+        console.log('📖 External API Kitap Sonuçları:', books);
+
+        // Tüm sonuçları birleştir
+        let allResults = [...dbResults, ...(movies || []), ...(books || [])];
+        
+        // Duplikatları kaldır (aynı title olanlar)
+        const seen = new Set();
+        allResults = allResults.filter(item => {
+          const key = (item.title || '').toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
         });
-
-        const movies = moviesResponse && moviesResponse.ok ? await moviesResponse.json() : [];
-        const books = booksResponse && booksResponse.ok ? await booksResponse.json() : [];
         
-        console.log('Movies:', movies);
-        console.log('Books:', books);
-        
-        const allResults = [...movies, ...books];
+        console.log(`📊 Toplam Sonuç Sayısı (Birleştirme Sonrası): ${allResults.length}`);
 
-        if (!allResults || allResults.length === 0) {
-          resultsContainer.innerHTML = '<div class="loading">Sonuç bulunamadı - Konsolu kontrol edin</div>';
-          return;
+        // FİLTRELEME
+        if (filterType.value) {
+          console.log(`🔽 Tip Filtresi Uygulanıyor: "${filterType.value}"`);
+          allResults = allResults.filter(item => item.item_type === filterType.value);
+          console.log(`📊 Sonuç Sayısı (Tip Filtresi Sonrası): ${allResults.length}`);
         }
 
-        resultsContainer.innerHTML = allResults.map(item => `
-          <div class="result-card">
-            <img src="${item.poster_url || 'https://via.placeholder.com/250x180?text=No+Image'}" alt="${item.title}" />
-            <div class="result-card-info">
-              <div class="result-card-title">${item.title}</div>
-              <div class="result-card-type">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</div>
-              <button class="result-card-btn">Ekle</button>
-            </div>
-          </div>
-        `).join('');
+        if (filterYear.value) {
+          allResults = allResults.filter(item => item.year == filterYear.value);
+        }
+
+        if (filterRating.value) {
+          const minRating = parseFloat(filterRating.value);
+          allResults = allResults.filter(item => (item.combined_rating || item.user_rating || item.external_rating || 0) >= minRating);
+        }
+
+        // SIRALAMA
+        switch(sortBy.value) {
+          case 'rating':
+            allResults.sort((a, b) => (b.combined_rating || b.user_rating || b.external_rating || 0) - (a.combined_rating || a.user_rating || a.external_rating || 0));
+            break;
+          case 'popularity':
+            allResults.sort((a, b) => (b.review_count || 0) - (a.review_count || 0));
+            break;
+          case 'newest':
+            allResults.sort((a, b) => (b.year || 0) - (a.year || 0));
+            break;
+          default:
+            // relevance (arama sonucu sırası)
+            break;
+        }
+
+        renderResults(allResults, resultsContainer);
       } catch (error) {
-        console.error('Search error:', error);
-        resultsContainer.innerHTML = '<div class="loading">Hata: ' + error.message + '</div>';
+        console.error('Arama Hatası:', error);
+        resultsContainer.innerHTML = `<div class="empty-state"><p>❌ Hata: ${error.message}</p></div>`;
       }
+    };
+
+    // ============ VİTRİN: EN YÜKSEK PUANLILAN ============
+    const loadTopRated = async () => {
+      try {
+        const response = await fetch(`${API_URL}/featured/top-rated?limit=6`);
+        if (!response.ok) throw new Error('API Hatası');
+        
+        let items = await response.json();
+        
+        console.log('⭐ En Yüksek Puanlılar:', items);
+        renderResults(items, topRatedContainer);
+      } catch (error) {
+        console.error('Top Rated Yükleme Hatası:', error);
+        topRatedContainer.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi</p></div>`;
+      }
+    };
+
+    // ============ VİTRİN: EN POPÜLER ============
+    const loadMostPopular = async () => {
+      try {
+        const response = await fetch(`${API_URL}/featured/popular?limit=6`);
+        if (!response.ok) throw new Error('API Hatası');
+        
+        let items = await response.json();
+        
+        console.log('🔥 En Popülerler:', items);
+        renderResults(items, mostPopularContainer);
+      } catch (error) {
+        console.error('Most Popular Yükleme Hatası:', error);
+        mostPopularContainer.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi</p></div>`;
+      }
+    };
+
+    // ============ EVENT LİSTENERS ============
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
     });
+
+    // Filtreler değişince otomatik arama yap
+    [filterType, filterYear, filterRating, sortBy].forEach(filter => {
+      filter.addEventListener('change', () => {
+        if (searchInput.value.trim().length >= 2) {
+          performSearch();
+        }
+      });
+    });
+
+    clearFiltersBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      filterType.value = '';
+      filterYear.value = '';
+      filterRating.value = '';
+      sortBy.value = 'relevance';
+      resultsContainer.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <p>Aramaya başlamak için yukarıya bir şey yazın ve Ara butonuna tıklayın</p>
+        </div>
+      `;
+    });
+
+    // ============ BAŞLANGIÇ ============
+    if (!sessionManager.isLoggedIn()) {
+      resultsContainer.innerHTML = `
+        <div class="auth-message">
+          <h3>👋 Hoş geldiniz!</h3>
+          <p>Keşfet özelliğini kullanmak için lütfen giriş yapınız.</p>
+          <a href="./login.html">Giriş Yap veya Kayıt Ol</a>
+        </div>
+      `;
+      topRatedContainer.innerHTML = resultsContainer.innerHTML;
+      mostPopularContainer.innerHTML = resultsContainer.innerHTML;
+    } else {
+      // Vitrin bölümlerini yükle
+      loadTopRated();
+      loadMostPopular();
+    }
   </script>
 </body>
 </html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Search Test</title>
+</head>
+<body>
+  <h1>API Search Test</h1>
+  <button onclick="testSearch()">Test: Harry Potter Ara</button>
+  <div id="result"></div>
+
+  <script>
+    async function testSearch() {
+      const API_URL = "http://127.0.0.1:8000/items";
+      const query = "harry";
+      
+      try {
+        const url = `${API_URL}/search?q=${encodeURIComponent(query)}`;
+        console.log("🔍 URL:", url);
+        
+        const response = await fetch(url);
+        console.log("📊 Status:", response.status);
+        
+        const data = await response.json();
+        console.log("📚 Raw API Response:", data);
+        console.log("📊 Sonuç Sayısı:", data.length);
+        
+        let html = `<h2>Sonuçlar (${data.length} tane):</h2><ul>`;
+        data.forEach((item, idx) => {
+          html += `<li>[${idx}] ID: ${item.item_id}, Title: ${item.title}, Type: ${item.item_type}</li>`;
+        });
+        html += '</ul>';
+        
+        document.getElementById('result').innerHTML = html;
+      } catch (error) {
+        console.error('❌ Hata:', error);
+        document.getElementById('result').innerHTML = `<p style="color: red;">Hata: ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -13,15 +13,33 @@ class ItemCreate(ItemBase):
 	year: Optional[int] = None
 	poster_url: Optional[str] = None
 	external_api_id: Optional[str] = None
+	genres: Optional[str] = None
+	authors: Optional[str] = None
+	page_count: Optional[int] = None
+	director: Optional[str] = None
+	actors: Optional[str] = None
+	external_api_source: Optional[str] = None
+	external_rating: Optional[int] = None  # API'den gelen rating (0-10)
 
 
 class ItemOut(ItemBase):
 	item_id: int
-	item_type: str
+	item_type: Optional[str] = None
 	year: Optional[int] = None
 	poster_url: Optional[str] = None
 	external_api_id: Optional[str] = None
+	genres: Optional[str] = None
+	authors: Optional[str] = None
+	page_count: Optional[int] = None
+	director: Optional[str] = None
+	actors: Optional[str] = None
+	external_api_source: Optional[str] = None
 	created_at: Optional[datetime] = None
+	external_rating: Optional[int] = 0  # API'den gelen rating (0-10)
+	user_rating: Optional[float] = 0  # Kullanıcı reviews'lerinden ortalama
+	combined_rating: Optional[float] = 0  # Hibrid rating (average)
+	review_count: Optional[int] = None  # Number of reviews
+	popularity: Optional[int] = None  # Based on review count
 
 	model_config = {"from_attributes": True}
 
@@ -29,6 +47,7 @@ class ReviewCreate(BaseModel):
     user_id: int
     item_id: int
     review_text: str
+    rating: Optional[int] = None  # 1-5
 
 
 class ReviewOut(BaseModel):
@@ -36,7 +55,7 @@ class ReviewOut(BaseModel):
 	user_id: int
 	item_id: int
 	review_text: str
-	# Use a datetime type so Pydantic accepts SQLAlchemy datetime objects
+	rating: Optional[int] = None
 	created_at: Optional[datetime] = None
 	username: Optional[str] = None
 
@@ -50,6 +69,17 @@ class UserOut(BaseModel):
 	created_at: Optional[datetime] = None
 
 	model_config = {"from_attributes": True}
+
+
+class UserRegister(BaseModel):
+	username: str
+	email: str
+	password: str
+
+
+class UserLogin(BaseModel):
+	email: str
+	password: str
 
 
 class ActivityOut(BaseModel):
@@ -70,6 +100,8 @@ class ActivityWithDetailsOut(BaseModel):
 	username: Optional[str] = None
 	title: Optional[str] = None
 	item_type: Optional[str] = None
+	user_id: Optional[int] = None
+	item_id: Optional[int] = None
 
 	model_config = {"from_attributes": True}
 

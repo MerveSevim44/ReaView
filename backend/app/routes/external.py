@@ -75,6 +75,8 @@ def import_item(
         director=first_result.get("director"),  # For movies
         actors=first_result.get("actors"),  # For movies
         external_api_source=first_result.get("external_api_source"),
+        external_api_id=first_result.get("external_api_id"),
+        external_rating=first_result.get("external_rating", 0),
     )
     
     try:

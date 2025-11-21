@@ -1,12 +1,13 @@
 // profile.js
 import { getUser, getUserReviews, getUserActivities, API_URL } from "./api.js";
+import { sessionManager } from "./session.js";
 
-// Current logged-in user (hardcoded for now)
-const currentUserId = 1;
+// Current logged-in user from session
+const currentUserId = sessionManager.getCurrentUserId();
 
 // Profile user from URL
 const urlParams = new URLSearchParams(window.location.search);
-const profileUserId = Number(urlParams.get("id")) || 1;
+const profileUserId = Number(urlParams.get("user") || urlParams.get("id")) || currentUserId;
 
 // DOM references
 const followBtn = document.getElementById("mainFollowBtn");
@@ -26,6 +27,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 // === MAIN INITIALIZATION ===
 async function initializePage() {
   try {
+    // Oturum kontrolü
+    if (!currentUserId) {
+      profileBox.innerHTML = `
+        <div class="error-message">
+          <h3>❌ Giriş Gerekli</h3>
+          <p>Bu sayfayı görmek için lütfen giriş yapınız.</p>
+          <a href="./login.html" style="color: #667eea; text-decoration: underline;">Giriş Yap</a>
+        </div>
+      `;
+      return;
+    }
+
     // Hide follow button if viewing own profile
     if (currentUserId === profileUserId) {
       followBtn.style.display = "none";
@@ -43,7 +56,7 @@ async function initializePage() {
     setupFollowButton();
     setupFollowLists();
   } catch (error) {
-    console.error("Initialization error:", error);
+    console.error("Başlatma hatası:", error);
   }
 }
 

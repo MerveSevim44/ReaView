@@ -1,5 +1,6 @@
 // frontend/js/items.js
 import { API_URL, getItemById, getReviews, postReview } from './api.js';
+import { sessionManager } from './session.js';
 
 let currentItemId = null;
 
@@ -14,16 +15,32 @@ export async function loadItemDetails() {
   try {
     currentItemId = getItemIdFromURL();
     
-    console.log(`Fetching item ${currentItemId} from ${API_URL}/items/${currentItemId}`);
+    // Oturum kontrolü
+    if (!sessionManager.isLoggedIn()) {
+      document.getElementById('itemBox').innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+          <h3>👋 Hoş geldiniz!</h3>
+          <p>Bu sayfayı görmek için lütfen giriş yapınız.</p>
+          <a href="./login.html" style="color: #667eea; text-decoration: underline;">Giriş Yap</a>
+        </div>
+      `;
+      document.getElementById('reviewsSection').style.display = 'none';
+      return;
+    }
+
+    const currentUser = sessionManager.getCurrentUser();
+    console.log(`Aktif kullanıcı: ${currentUser.username} (ID: ${currentUser.id})`);
+    console.log(`İçerik ${currentItemId} yükleniyor`);
+    
     const item = await getItemById(currentItemId);
     
-    console.log('Item loaded:', item);
+    console.log('İçerik yüklendi:', item);
     displayItemDetails(item);
     
     // Load reviews after item is loaded
     loadReviews(currentItemId);
   } catch (error) {
-    console.error('Error loading item:', error);
+    console.error('İçerik yükleme hatası:', error);
     document.getElementById('itemBox').innerHTML = `<div class="loading">❌ Hata: ${error.message}</div>`;
   }
 }
@@ -45,16 +62,16 @@ function displayItemDetails(item) {
   
   document.getElementById('itemDesc').textContent = item.description || 'Açıklama bulunmamaktadır.';
   
-  console.log('Item details displayed');
+  console.log('İçerik detayları gösterildi');
 }
 
 // Load reviews for item
 export async function loadReviews(itemId) {
   try {
-    console.log(`Fetching reviews for item ${itemId}...`);
+    console.log(`İçerik ${itemId} için yorumlar yükleniyor...`);
     const reviews = await getReviews(itemId);
     
-    console.log('Reviews received:', reviews);
+    console.log('Yorumlar alındı:', reviews);
     
     const reviewsList = document.getElementById('reviewsList');
     if (!reviews || reviews.length === 0) {
@@ -63,7 +80,7 @@ export async function loadReviews(itemId) {
     }
 
     reviewsList.innerHTML = reviews.map(r => {
-      console.log('Rendering review:', r);
+      console.log('Yorum işleniyor:', r);
       return `
       <div class="review-item">
         <div class="review-author">${r.username || `Kullanıcı #${r.user_id}`}</div>

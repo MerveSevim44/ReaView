@@ -64,9 +64,31 @@
       padding: 40px;
       color: #999;
     }
+
+    .auth-message {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .auth-message a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .auth-message a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
+  <!-- Navbar otomatik olarak eklenecek -->
+
   <!-- Main Content -->
   <main id="main-content">
     <h1>📰 Akış</h1>
@@ -74,6 +96,9 @@
       <div class="loading">Yükleniyor...</div>
     </div>
   </main>
+
+  <!-- Load Navbar Module -->
+  <script type="module" src="./js/navbar.js"></script>
 
   <!-- Load Feed Module -->
   <script type="module" src="./js/feed.js"></script>

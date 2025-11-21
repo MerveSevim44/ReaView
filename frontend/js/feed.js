@@ -1,7 +1,8 @@
 // frontend/js/feed.js
 // Display user activity feed with interactive buttons
 
-import { API_URL } from "./api.js";
+import { API_URL, getItems } from "./api.js";
+import { sessionManager } from "./session.js";
 
 // DOM references
 const feedContainer = document.getElementById("feed-container");
@@ -26,21 +27,38 @@ window.addEventListener("DOMContentLoaded", async () => {
 // === MAIN INITIALIZATION ===
 async function initializeFeed() {
   try {
-    // Check if we're on a personalized feed (with user_id param) or general feed
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("user_id");
-    
-    if (userId) {
-      console.log("🔄 Loading personalized feed for user:", userId);
-      await loadPersonalizedFeed(userId);
-    } else {
-      console.log("🔄 Loading general feed from:", `${API_URL}/feed/`);
-      await loadFeed();
+    // Oturum kontrolü
+    if (!sessionManager.isLoggedIn()) {
+      showAuthMessage();
+      return;
     }
+
+    // Giriş yapıldıysa, kişisel akışı yükle
+    const currentUser = sessionManager.getCurrentUser();
+    console.log("✅ Aktif kullanıcı:", currentUser);
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get("user_id") || currentUser.id;
+    
+    console.log("🔄 Yükleniyor - Kullanıcı ID:", userId);
+    await loadFeed();
   } catch (error) {
-    console.error("Feed initialization error:", error);
-    showError("Feed yüklenemedi", error);
+    console.error("Feed başlatma hatası:", error);
+    showError("Akış yüklenemedi", error);
   }
+}
+
+/**
+ * Giriş yapılmamışsa mesaj göster
+ */
+function showAuthMessage() {
+  feedContainer.innerHTML = `
+    <div class="auth-message">
+      <h3>👋 Hoş geldiniz!</h3>
+      <p>Akışı görmek için lütfen giriş yapınız.</p>
+      <a href="./login.html">Giriş Yap veya Kayıt Ol</a>
+    </div>
+  `;
 }
 
 // === LOAD FEED ===
@@ -48,7 +66,19 @@ async function loadFeed() {
   try {
     feedContainer.innerHTML = '<div class="loading">📡 Akış yükleniyor...</div>';
 
-    const res = await fetch(`${API_URL}/feed/`);
+    const currentUser = sessionManager.getCurrentUser();
+    if (!currentUser) {
+      showAuthMessage();
+      return;
+    }
+
+    // Aktif kullanıcı ID'sini kullanarak istek gönder
+    const userId = currentUser.id;
+    const res = await fetch(`${API_URL}/feed/?user_id=${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      }
+    });
     
     if (!res.ok) {
       const errorData = await res.text();
@@ -56,7 +86,7 @@ async function loadFeed() {
     }
 
     const activities = await res.json();
-    console.log(`✅ Loaded ${activities.length} activities`);
+    console.log(`✅ ${activities.length} aktivite yüklendi`);
 
     if (!activities || activities.length === 0) {
       feedContainer.innerHTML = '<div class="empty-state">📭 Henüz aktivite yok. Kullanıcıları takip etmeye başlayın!</div>';
@@ -72,42 +102,8 @@ async function loadFeed() {
     bindActivityEvents();
 
   } catch (error) {
-    console.error("Error loading feed:", error);
+    console.error("Akış yükleme hatası:", error);
     showError("Akış yüklenemedi", error);
-  }
-}
-
-// === LOAD PERSONALIZED FEED (Activities from followed users) ===
-async function loadPersonalizedFeed(userId) {
-  try {
-    feedContainer.innerHTML = '<div class="loading">📡 Kişisel akış yükleniyor...</div>';
-
-    const res = await fetch(`${API_URL}/feed/?user_id=${userId}`);
-    
-    if (!res.ok) {
-      const errorData = await res.text();
-      throw new Error(`HTTP ${res.status}: ${errorData}`);
-    }
-
-    const activities = await res.json();
-    console.log(`✅ Loaded ${activities.length} personalized activities`);
-
-    if (!activities || activities.length === 0) {
-      feedContainer.innerHTML = '<div class="empty-state">📭 Takip ettiğiniz kullanıcılardan henüz aktivite yok.</div>';
-      return;
-    }
-
-    // Render personalized activities
-    feedContainer.innerHTML = activities
-      .map(activity => renderActivityCard(activity))
-      .join("");
-    
-    // Bind event listeners after rendering new content
-    bindActivityEvents();
-
-  } catch (error) {
-    console.error("Error loading personalized feed:", error);
-    showError("Kişisel akış yüklenemedi", error);
   }
 }
 

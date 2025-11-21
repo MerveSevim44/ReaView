@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import auth, items, reviews, feed, users, external, follows
+from .routes import auth, items, reviews, feed, users, external, follows, test_ratings
+from sqlalchemy import text
+from .database import SessionLocal, engine
+import os
+from pathlib import Path
 
 
 app = FastAPI(title="ReaView API")
@@ -25,6 +29,7 @@ for module, prefix, tag in (
 	(users, "/users", "Users"),
 	(external, "/external", "External API"),
 	(follows, "/users", "Follow System"),
+	(test_ratings, "/test", "Test Data"),
 ):
 	if hasattr(module, "router"):
 		app.include_router(module.router, prefix=prefix, tags=[tag])
@@ -32,3 +37,55 @@ for module, prefix, tag in (
 		# If running in development you might prefer an explicit error so you
 		# know a router is missing. For now we raise a helpful error message.
 		raise AttributeError(f"module {module.__name__} does not define 'router'")
+
+
+# Migration endpoint - çalıştırmak için: POST /migrate
+@app.post("/migrate")
+def run_migrations():
+	"""
+	Run all migration files in sequential order.
+	Only for development - do not use in production.
+	"""
+	migrations_dir = Path(__file__).parent.parent / "migrations"
+	migration_files = sorted(migrations_dir.glob("*.sql"))
+	
+	if not migration_files:
+		return {"message": "No migration files found", "count": 0}
+	
+	db = SessionLocal()
+	results = []
+	
+	try:
+		for migration_file in migration_files:
+			try:
+				with open(migration_file, "r") as f:
+					sql_content = f.read()
+				
+				# Execute SQL
+				db.execute(text(sql_content))
+				db.commit()
+				results.append({
+					"file": migration_file.name,
+					"status": "✅ Success"
+				})
+			except Exception as e:
+				results.append({
+					"file": migration_file.name,
+					"status": f"⚠️ {str(e)}"
+				})
+				db.rollback()
+		
+		return {
+			"message": "Migration process completed",
+			"total": len(migration_files),
+			"results": results
+		}
+	finally:
+		db.close()
+
+
+# Health check endpoint
+@app.get("/health")
+def health_check():
+	return {"status": "✅ ReaView API is running"}
+

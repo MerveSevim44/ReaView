@@ -21,7 +21,7 @@ def get_feed(
         JOIN users u ON u.user_id = a.user_id
         LEFT JOIN items i ON i.item_id = a.item_id
         ORDER BY a.created_at DESC
-        LIMIT 20
+
         """)
         result = db.execute(query).fetchall()
         return [dict(r._mapping) for r in result]
@@ -42,3 +42,4 @@ def get_feed(
         """)
         result = db.execute(query, {"uid": user_id}).fetchall()
         return [dict(r._mapping) for r in result]
+

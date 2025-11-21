@@ -1,0 +1,266 @@
+/* frontend/css/navbar.css */
+
+.navbar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  color: white;
+}
+
+.navbar-brand:hover {
+  opacity: 0.9;
+}
+
+.navbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.navbar-nav {
+  display: flex;
+  gap: 15px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-nav a {
+  color: white;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.navbar-nav a:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.navbar-nav a.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid white;
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  color: #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.user-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  margin-top: 10px;
+  display: none;
+  z-index: 1000;
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  color: #333;
+  text-decoration: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.dropdown-menu a:hover,
+.dropdown-menu button:hover {
+  background: #f5f5f5;
+}
+
+.dropdown-menu a:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.dropdown-menu a:last-child,
+.dropdown-menu button:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #eee;
+  margin: 5px 0;
+}
+
+.logout-btn {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-login,
+.btn-register {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-login {
+  background: white;
+  color: #667eea;
+}
+
+.btn-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-register {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid white;
+}
+
+.btn-register:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .navbar-center {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .navbar-nav {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .navbar-nav a {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 12px 10px;
+  }
+
+  .navbar-brand {
+    font-size: 16px;
+    gap: 5px;
+  }
+
+  .navbar-center {
+    order: 3;
+    width: 100%;
+  }
+
+  .navbar-nav {
+    gap: 5px;
+  }
+
+  .navbar-nav a {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .dropdown-menu {
+    min-width: 150px;
+  }
+}
