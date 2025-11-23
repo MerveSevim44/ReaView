@@ -493,6 +493,7 @@
 
     // ============ SESSION STORAGE: ARAMA SONUÇLARINı KAYDET ============
     const STORAGE_KEY = 'searchState';
+    const ITEMS_STORAGE_KEY = 'searchItems';
     
     const saveSearchState = () => {
       const state = {
@@ -529,8 +530,14 @@
     window.addEventListener('load', restoreSearchState);
 
     // ============ RENDER HELPER ============
+    // Global items array - API items için index ref
+    let currentItems = [];
+
     const renderResults = (items, container) => {
       console.log('🎨 renderResults çağrıldı:', { itemsCount: items?.length, containerClass: container.id });
+      
+      currentItems = items;  // Global tutarak sessionStorage'a kaydet
+      sessionStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(items));
       
       if (!items || items.length === 0) {
         container.innerHTML = `
@@ -542,10 +549,13 @@
         return;
       }
 
-      container.innerHTML = items.map(item => {
+      container.innerHTML = items.map((item, idx) => {
         // Hybrid rating: combined_rating > user_rating > external_rating > 0
         const rating = item.combined_rating || item.user_rating || item.external_rating || 0;
         const stars = rating > 0 ? '⭐'.repeat(Math.floor(rating / 2)) + (rating % 2 !== 0 ? '✨' : '') : '';
+        
+        // Item türünü belirle (DB veya API)
+        const itemType = item.item_type || item.type || (item.source === 'tmdb' ? 'movie' : 'book');
         
         // Rating kaynağını göster
         let ratingInfo = '';
@@ -565,7 +575,7 @@
                 alt="${item.title}"
                 onerror="this.src='https://via.placeholder.com/250x180?text=No+Image'"
               />
-              <span class="type-badge">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</span>
+              <span class="type-badge">${itemType === 'movie' ? '🎬 Film' : '📖 Kitap'}</span>
             </div>
             <div class="result-card-info">
               <div class="result-card-title">${item.title}</div>
@@ -576,45 +586,94 @@
               </div>
               <div class="result-card-buttons">
                 ${item.item_id ? `
-                  <button class="result-card-btn info detail-btn" data-item-id="${item.item_id}">🔍 Detay</button>
+                  <button class="result-card-btn info detail-db-btn" data-item-id="${item.item_id}">🔍 Detay</button>
                 ` : `
-                  <button class="result-card-btn info detail-api-btn" data-item='${JSON.stringify(item)}'>🔍 Detay</button>
+                  <button class="result-card-btn info detail-api-btn" data-api-index="${idx}">🔍 Detay</button>
                 `}
               </div>
             </div>
           </div>
         `;
       }).join('');
-
-      // Detay butonuna event listener ekle
-      container.querySelectorAll('.detail-btn').forEach(btn => {
+      
+      // Event listeners ekle
+      container.querySelectorAll('.detail-db-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.preventDefault();
           e.stopPropagation();
           const itemId = btn.getAttribute('data-item-id');
+          console.log(`🖱️ DB Detay Butonu Tıklandı - ID: ${itemId}`);
           goToDetail(itemId);
         });
       });
-
-      // API Detay butonuna event listener ekle
+      
       container.querySelectorAll('.detail-api-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.preventDefault();
           e.stopPropagation();
-          const item = JSON.parse(btn.getAttribute('data-item'));
-          console.log('📍 API İçeriği Detay:', item);
-          goToDetail(null, item);
+          const apiIndex = parseInt(btn.getAttribute('data-api-index'));
+          console.log(`🖱️ API Detay Butonu Tıklandı - Index: ${apiIndex}`);
+          goToDetailAPI(apiIndex);
         });
       });
     };
 
     // ============ DETAY SAYFASINA GİT ============
-    const goToDetail = (itemId, itemData = null) => {
-      if (itemData) {
-        // External API verisi - encode et ve gönder
-        const encodedData = encodeURIComponent(JSON.stringify(itemData));
-        window.location.href = `items.html?id=${encodedData}&source=api`;
-      } else {
-        // Database verisi - ID'si kullan
+    const goToDetail = (itemId) => {
+      try {
+        if (!itemId || itemId === 'undefined' || isNaN(itemId)) {
+          throw new Error(`Geçersiz item ID: ${itemId}`);
+        }
+        console.log(`✅ DB Item Detayına Gidiliyor - ID: ${itemId}`);
         window.location.href = `items.html?id=${itemId}`;
+      } catch (err) {
+        console.error('❌ DB Detay Hatası:', err);
+        alert(`❌ Detay açılırken hata oluştu:\n${err.message}`);
+      }
+    };
+
+    const goToDetailAPI = (itemIndex) => {
+      try {
+        console.log(`📍 API İçeriği Detay İsteniliyor - Index: ${itemIndex}`);
+        
+        // SessionStorage'dan veya global arrayden al
+        let items = currentItems;
+        if (!items || items.length === 0) {
+          const stored = sessionStorage.getItem(ITEMS_STORAGE_KEY);
+          items = stored ? JSON.parse(stored) : [];
+        }
+        
+        console.log(`📊 Mevcut ${items.length} adet API item var`);
+        
+        if (!items || items.length === 0) {
+          throw new Error('Arama sonuçları bulunamadı. Lütfen tekrar arama yapın.');
+        }
+        
+        const item = items[itemIndex];
+        if (!item) {
+          throw new Error(`Item index ${itemIndex} bulunamadı. Toplam ${items.length} öğe var.`);
+        }
+        
+        // Item türünü kontrol et
+        if (!item.title) {
+          throw new Error('Item başlık bilgisi eksik. Item verisi: ' + JSON.stringify(item));
+        }
+        
+        console.log('✅ API İçeriği Bulundu:', {
+          title: item.title,
+          source: item.source,
+          id: item.id,
+          sourceId: item.sourceId
+        });
+        
+        const itemJson = JSON.stringify(item);
+        const encodedId = encodeURIComponent(itemJson);
+        
+        console.log(`✅ API Item Detayına Gidiliyor - Title: ${item.title}, URL: items.html?id=...&source=api`);
+        window.location.href = `items.html?id=${encodedId}&source=api`;
+      } catch (err) {
+        console.error('❌ API Detay Hatası:', err);
+        alert(`❌ API İçeriği açılırken hata oluştu:\n\n${err.message}\n\nLütfen tarayıcının developer tools'unu (F12) açıp console'u kontrol edin.`);
       }
     };
 
@@ -712,6 +771,21 @@
         }
 
         renderResults(allResults, resultsContainer);
+        
+        // Arama state'ini kaydet
+        currentItems = allResults;
+        sessionStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(allResults));
+        const state = {
+          query: query,
+          filters: {
+            type: filterType.value,
+            year: filterYear.value,
+            rating: filterRating.value,
+            sort: sortBy.value
+          }
+        };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        console.log('💾 Arama state kaydedildi');
       } catch (error) {
         console.error('Arama Hatası:', error);
         resultsContainer.innerHTML = `<div class="empty-state"><p>❌ Hata: ${error.message}</p></div>`;
@@ -726,6 +800,16 @@
         
         let items = await response.json();
         
+        // Her item'a sourceId ekle (API items için)
+        items.forEach(item => {
+          if (item.external_api_id && !item.item_id) {
+            // Bu bir API item'ı (database'de yoksa)
+            item.source = item.external_api_source === 'tmdb' ? 'tmdb' : 
+                         item.external_api_source === 'google_books' ? 'google_books' : 'openlib';
+            item.sourceId = `${item.source}_${item.external_api_id}`;
+          }
+        });
+        
         console.log('⭐ En Yüksek Puanlılar:', items);
         renderResults(items, topRatedContainer);
       } catch (error) {
@@ -734,13 +818,23 @@
       }
     };
 
-    // ============ VİTRİN: EN POPÜLER ============
-    const loadMostPopular = async () => {
+    // ============ VİTRİN: EN POPÜLERLERİ ============
+    const loadPopular = async () => {
       try {
         const response = await fetch(`${API_URL}/featured/popular?limit=6`);
         if (!response.ok) throw new Error('API Hatası');
         
         let items = await response.json();
+        
+        // Her item'a sourceId ekle (API items için)
+        items.forEach(item => {
+          if (item.external_api_id && !item.item_id) {
+            // Bu bir API item'ı (database'de yoksa)
+            item.source = item.external_api_source === 'tmdb' ? 'tmdb' : 
+                         item.external_api_source === 'google_books' ? 'google_books' : 'openlib';
+            item.sourceId = `${item.source}_${item.external_api_id}`;
+          }
+        });
         
         console.log('🔥 En Popülerler:', items);
         renderResults(items, mostPopularContainer);
@@ -791,9 +885,33 @@
       topRatedContainer.innerHTML = resultsContainer.innerHTML;
       mostPopularContainer.innerHTML = resultsContainer.innerHTML;
     } else {
-      // Vitrin bölümlerini yükle
-      loadTopRated();
-      loadMostPopular();
+      // Önceki arama sonuçlarını restore et
+      const savedState = sessionStorage.getItem(STORAGE_KEY);
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          searchInput.value = state.query || '';
+          filterType.value = state.filters?.type || '';
+          filterYear.value = state.filters?.year || '';
+          filterRating.value = state.filters?.rating || '';
+          sortBy.value = state.filters?.sort || 'relevance';
+          
+          const savedItems = sessionStorage.getItem(ITEMS_STORAGE_KEY);
+          if (savedItems) {
+            currentItems = JSON.parse(savedItems);
+            renderResults(currentItems, resultsContainer);
+            console.log('✅ Önceki arama geri yüklendi:', state.query);
+          }
+        } catch (e) {
+          console.error('Arama restore hatası:', e);
+          loadTopRated();
+          loadPopular();
+        }
+      } else {
+        // İlk ziyaret - vitrin bölümlerini yükle
+        loadTopRated();
+        loadPopular();
+      }
     }
   </script>
 </body>

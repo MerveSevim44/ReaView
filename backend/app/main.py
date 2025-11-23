@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import auth, items, reviews, feed, users, external, follows, test_ratings
+from .routes import auth, items, reviews, feed, users, external, follows
 from sqlalchemy import text
-from .database import SessionLocal, engine
+from .database import SessionLocal, engine, init_db
 import os
 from pathlib import Path
 
 
 app = FastAPI(title="ReaView API")
+
+# Initialize database on startup
+@app.on_event("startup")
+def startup_event():
+    init_db()
+    print("[OK] Application started")
 
 # Enable CORS so frontend can call backend from browser
 app.add_middleware(
@@ -29,7 +35,6 @@ for module, prefix, tag in (
 	(users, "/users", "Users"),
 	(external, "/external", "External API"),
 	(follows, "/users", "Follow System"),
-	(test_ratings, "/test", "Test Data"),
 ):
 	if hasattr(module, "router"):
 		app.include_router(module.router, prefix=prefix, tags=[tag])
@@ -66,12 +71,12 @@ def run_migrations():
 				db.commit()
 				results.append({
 					"file": migration_file.name,
-					"status": "✅ Success"
+					"status": "[OK] Success"
 				})
 			except Exception as e:
 				results.append({
 					"file": migration_file.name,
-					"status": f"⚠️ {str(e)}"
+					"status": f"[WARNING] {str(e)}"
 				})
 				db.rollback()
 		
@@ -87,5 +92,5 @@ def run_migrations():
 # Health check endpoint
 @app.get("/health")
 def health_check():
-	return {"status": "✅ ReaView API is running"}
+	return {"status": "[OK] ReaView API is running"}
 

@@ -447,6 +447,12 @@
       gap: 12px;
     }
 
+    .ratings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .comment-item {
       background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
       padding: 16px;
@@ -524,6 +530,48 @@
       transform: translateY(-1px);
     }
 
+    /* ============ RATING ITEM STYLES ============ */
+    .rating-item {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 152, 0, 0.05) 100%);
+      padding: 16px;
+      border-radius: 10px;
+      border-left: 3px solid #ffc107;
+      transition: all 0.3s ease;
+      animation: slideInLeft 0.4s ease;
+    }
+
+    .rating-item:hover {
+      transform: translateX(2px);
+      box-shadow: 0 2px 8px rgba(255, 193, 7, 0.1);
+    }
+
+    .rating-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .rating-user {
+      font-weight: 700;
+      color: #ff9800;
+      font-size: 13px;
+    }
+
+    .rating-date {
+      font-size: 11px;
+      color: #999;
+      font-weight: 500;
+    }
+
+    .rating-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
     /* ============ EMPTY STATE ============ */
     .empty-state {
       text-align: center;
@@ -576,6 +624,274 @@
         opacity: 1;
         transform: translateY(0);
       }
+    }
+
+    /* ============ MODAL/POPUP ============ */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideInUp 0.3s ease;
+      padding: 0;
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 20px;
+      color: #1a1a2e;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+      transition: all 0.3s ease;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #667eea;
+      transform: rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .list-sorting-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sort-btn {
+      flex: 1;
+      min-width: 90px;
+      padding: 8px 12px;
+      background: #f0f0f0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      color: #666;
+      transition: all 0.3s ease;
+    }
+
+    .sort-btn:hover {
+      background: #e8e8e8;
+      border-color: #667eea;
+      color: #667eea;
+    }
+
+    .sort-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .list-item {
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    }
+
+    .list-item:hover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: translateX(4px);
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .list-item-name {
+      font-weight: 700;
+      color: #1a1a2e;
+      display: block;
+    }
+
+    .list-item:hover .list-item-name {
+      color: white;
+    }
+
+    .list-item-description {
+      font-size: 12px;
+      color: #666;
+      font-weight: 400;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    .list-item:hover .list-item-description {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .list-item:hover .list-delete-btn {
+      opacity: 1;
+    }
+
+    .list-item-count {
+      font-size: 12px;
+      opacity: 0.7;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .list-item:hover .list-item-count {
+      opacity: 1;
+      color: white;
+    }
+
+    .list-delete-btn {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px 8px;
+      opacity: 0.6;
+      transition: all 0.3s ease;
+    }
+
+    .list-delete-btn:hover {
+      opacity: 1;
+      color: #ff4757;
+      transform: scale(1.2);
+    }
+
+    .new-list-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      margin-top: 10px;
+    }
+
+    .new-list-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .new-list-input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+
+    .new-list-input:focus {
+      outline: none;
+      border-color: #764ba2;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .modal-btn-cancel {
+      flex: 1;
+      padding: 10px;
+      background: #f0f0f0;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .modal-btn-cancel:hover {
+      background: #e0e0e0;
+    }
+
+    .modal-btn-create {
+      flex: 1;
+      padding: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .modal-btn-create:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .empty-lists {
+      text-align: center;
+      padding: 30px 20px;
+      color: #999;
+    }
+
+    .empty-lists p {
+      margin-bottom: 15px;
+      font-size: 14px;
     }
 
     @media (max-width: 768px) {
@@ -636,18 +952,64 @@
     <div id="error" class="empty-state" style="display: none;"></div>
   </main>
 
+  <!-- MODAL: Özel Listeye Ekle -->
+  <div id="listModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📋 Özel Listeye Ekle</h2>
+        <button class="modal-close" onclick="closeListModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="existingLists"></div>
+        <div id="newListForm" style="display: none;">
+          <input 
+            type="text" 
+            id="newListName" 
+            class="new-list-input" 
+            placeholder="Liste adı..." 
+            onkeypress="handleEnter(event)"
+          />
+          <textarea 
+            id="newListDescription" 
+            class="new-list-input" 
+            placeholder="Liste açıklaması (opsiyonel)..." 
+            style="resize: vertical; min-height: 60px; font-family: inherit;"
+          ></textarea>
+          <div class="modal-actions">
+            <button class="modal-btn-cancel" onclick="cancelNewList()">İptal</button>
+            <button class="modal-btn-create" onclick="createNewList()">Oluştur</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = "http://127.0.0.1:8000";
     const API_URL = `${API_BASE}/items`;
 
     let currentItem = null;
     let currentUser = { user_id: 1, username: "demo_user" };
+    
+    // Load current user from session (localStorage)
+    try {
+      const savedUser = localStorage.getItem("currentUser");
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+      }
+    } catch (error) {
+      console.error("Oturum yükleme hatası:", error);
+    }
+    
     let selectedRating = 0;
     let isExternalItem = false;
 
     const urlParams = new URLSearchParams(window.location.search);
     const itemId = urlParams.get('id');
     const itemSource = urlParams.get('source'); // 'db' veya 'api'
+    console.log('📍 URL Parametreleri:', { itemSource, itemIdLength: itemId?.length, fullUrl: window.location.href });
+    console.log('⚠️ URL Search String:', window.search);
+    console.log('🔍 Tüm parametreler:', Object.fromEntries(urlParams));
 
     function formatDate(dateString) {
       const date = new Date(dateString);
@@ -670,34 +1032,76 @@
 
     async function loadItemDetails() {
       try {
+        console.log('🔄 loadItemDetails başladı:', { itemSource, itemIdLength: itemId?.length });
+        console.log('🔍 itemSource exact value:', itemSource, 'Type:', typeof itemSource, 'Equals api?:', itemSource === 'api', 'Includes api?:', itemSource?.includes?.('api'));
+        
         if (itemSource === 'api') {
           // API'den gelen veri
-          currentItem = JSON.parse(decodeURIComponent(itemId));
-          isExternalItem = true;
-          console.log('📍 External API Verisi:', currentItem);
-          console.log('📍 SourceId:', currentItem.sourceId);
+          if (!itemId) {
+            throw new Error('API item ID parametresi eksik');
+          }
+          
+          try {
+            currentItem = JSON.parse(decodeURIComponent(itemId));
+            isExternalItem = true;
+            
+            if (!currentItem.title) {
+              throw new Error('API item başlık bilgisi eksik');
+            }
+            
+            console.log('✅ External API Verisi Yüklendi:', currentItem);
+            console.log('✅ SourceId:', currentItem.sourceId);
+          } catch (parseErr) {
+            throw new Error(`API item parse hatası: ${parseErr.message}`);
+          }
         } else {
           // Veritabanından gelen veri
+          if (!itemId || isNaN(itemId)) {
+            throw new Error(`Geçersiz DB item ID: ${itemId}`);
+          }
+          
           const response = await fetch(`${API_URL}/${itemId}`);
-          if (!response.ok) throw new Error('İçerik bulunamadı');
+          if (!response.ok) {
+            throw new Error(`HTTP Hatası: ${response.status} - İçerik bulunamadı`);
+          }
+          
           currentItem = await response.json();
-          console.log('📖 Veritabanı Verisi:', currentItem);
+          isExternalItem = false;
+          console.log('✅ Veritabanı Verisi Yüklendi:', currentItem);
         }
         
         renderItemDetail();
         
         // Tüm itemler için yorumları yükle (DB ve API)
         loadComments();
+        
+        // DB items için puanları yükle
+        if (!isExternalItem) {
+          loadRatings();
+        }
       } catch (error) {
-        console.error('Hata:', error);
+        console.error('❌ loadItemDetails Hatası:', error);
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'block';
-        document.getElementById('error').innerHTML = '⚠️ İçerik yüklenemedi';
+        document.getElementById('error').innerHTML = `
+          <div style="padding: 20px; background: #fee; border: 1px solid #fcc; border-radius: 8px; color: #c33;">
+            <h3>⚠️ İçerik Yüklenirken Hata Oluştu</h3>
+            <p><strong>Hata:</strong> ${error.message}</p>
+            <p><small style="color: #666;">
+              Lütfen tarayıcının developer tools'unu (F12) açıp console'u kontrol edin.
+            </small></p>
+            <button onclick="window.history.back()" style="margin-top: 10px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Geri Dön
+            </button>
+          </div>
+        `;
       }
     }
 
     function renderItemDetail() {
       const item = currentItem;
+      console.log('🎨 renderItemDetail çağrıldı:', { isExternalItem, itemSource, itemId, actualItemId: item?.id || item?.item_id, title: item?.title });
+      console.log('🔍 isExternalItem durumu:', isExternalItem, '| API mi:', itemSource === 'api');
       const rating = item.combined_rating || item.user_rating || item.external_rating || 0;
       const stars = renderStars(rating);
 
@@ -733,17 +1137,11 @@
                   </div>
                 </div>
 
-                ${!isExternalItem ? `
                 <div class="rating-input-group">
                   <label class="rating-label">Puan Ver:</label>
                   <div class="rating-stars-input" id="ratingInput"></div>
                   <button class="submit-btn" onclick="submitRating()">Gönder</button>
                 </div>
-                ` : `
-                <div style="background: rgba(102, 126, 234, 0.1); padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 13px; color: #667eea;">
-                  ℹ️ Harici API kaynakları için puan verme şu anda desteği yok.
-                </div>
-                `}
               </div>
 
               <div class="action-buttons">
@@ -766,19 +1164,18 @@
             </div>
           ` : ''}
 
+          <div class="ratings-section">
+            <div class="section-title">⭐ Puanlar</div>
+            <div id="ratingsList" class="ratings-list"></div>
+          </div>
+
           <div class="comments-section">
             <div class="section-title">💬 Yorumlar</div>
             
-            ${!isExternalItem ? `
             <div class="comment-form">
               <textarea id="commentText" placeholder="Yorumunuzu yazın..."></textarea>
               <button class="submit-btn" onclick="submitComment()">Gönder</button>
             </div>
-            ` : `
-            <div class="comment-form" style="background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3);">
-              <p style="color: #ff9800; font-size: 13px; margin: 0;">ℹ️ Harici API kaynakları için yorumlar şu anda başta yok olabilir.</p>
-            </div>
-            `}
 
             <div id="commentsList" class="comments-list"></div>
           </div>
@@ -789,9 +1186,7 @@
       document.getElementById('content').style.display = 'block';
       document.getElementById('content').innerHTML = html;
 
-      if (!isExternalItem) {
-        initRatingInput();
-      }
+      initRatingInput();
     }
 
     function initRatingInput() {
@@ -821,31 +1216,83 @@
         alert('Lütfen bir puan seçin');
         return;
       }
-      saveRating(currentItem.item_id, selectedRating);
+      
+      // For API items, don't save to ratings table - ratings are saved as comments
+      if (isExternalItem) {
+        console.log('⚠️ API items için rating comments olarak kaydediliyor');
+        saveRating(undefined, selectedRating); // No itemId for API items
+      } else {
+        // For DB items, use the item_id
+        console.log('📝 DB item için rating kaydediliyor:', currentItem.item_id);
+        saveRating(currentItem.item_id, selectedRating);
+      }
     }
 
     async function saveRating(itemId, rating) {
       try {
-        console.log(`⭐ Puan kaydediliyor: ${rating}/10`);
-        const response = await fetch(`${API_URL}/${itemId}/rate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: currentUser.user_id,
-            rating: rating
-          })
-        });
+        console.log(`⭐ Puan kaydediliyor: ${rating}/10, itemId: ${itemId}, currentUser:`, currentUser);
+        
+        if (isExternalItem) {
+          // API item - API endpoint'ine gönder
+          let sourceId = currentItem.sourceId;
+          
+          if (!sourceId) {
+            if (currentItem.source === 'tmdb') {
+              sourceId = `tmdb_${currentItem.id || currentItem.external_api_id}`;
+            } else if (currentItem.source === 'google_books') {
+              sourceId = `google_books_${currentItem.id || currentItem.external_api_id}`;
+            } else if (currentItem.source === 'openlib') {
+              sourceId = `openlib_${currentItem.id || currentItem.external_api_id}`;
+            }
+          }
+          
+          console.log(`📤 API Puanı Kaydediliyor: ${sourceId} -> ${rating}/10`);
+          
+          const response = await fetch(`${API_BASE}/items/api/comments/${sourceId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: currentUser.user_id,
+              review_text: `API puanı: ${rating}/10`,
+              rating: rating
+            })
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Puan başarıyla kaydedildi:', data);
-          alert(`✅ ${rating}/10 puan başarıyla kaydedildi!`);
-          selectedRating = 0;
-          initRatingInput();
-          setTimeout(() => loadItemDetails(), 500);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ API Puanı başarıyla kaydedildi:', data);
+            alert(`✅ ${rating}/10 puan başarıyla kaydedildi!`);
+            selectedRating = 0;
+            initRatingInput();
+            setTimeout(() => loadItemDetails(), 500);
+          } else {
+            console.error('❌ API Puan kayıt hatası:', response.status);
+            alert('❌ Puan kaydedilirken hata oluştu');
+          }
         } else {
-          console.error('❌ Puan kayıt hatası:', response.status);
-          alert('❌ Puan kaydedilirken hata oluştu');
+          // DB item - normal endpoint
+          console.log(`📤 DB Puanı Kaydediliyor: /items/${itemId}/rate`);
+          const response = await fetch(`${API_URL}/${itemId}/rate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: currentUser.user_id,
+              rating: rating
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Puan başarıyla kaydedildi:', data);
+            alert(`✅ ${rating}/10 puan başarıyla kaydedildi!`);
+            selectedRating = 0;
+            initRatingInput();
+            setTimeout(() => loadItemDetails(), 500);
+          } else {
+            const errorText = await response.text();
+            console.error('❌ Puan kayıt hatası:', response.status, errorText);
+            alert('❌ Puan kaydedilirken hata oluştu');
+          }
         }
       } catch (error) {
         console.error('❌ Rating hatası:', error);
@@ -854,13 +1301,337 @@
     }
 
     function toggleLibrary(action) {
-      console.log(`📚 ${action} işlemi:`, itemId);
-      alert(`${action} işlemi yapıldı! (Demo)`);
+      console.log(`📚 ${action} işlemi:`, 'isExternalItem:', isExternalItem);
+      
+      // Status'u action'dan derive et
+      let status;
+      if (currentItem.item_type === 'book') {
+        status = action === 'read' ? 'read' : 'toread';
+      } else {
+        status = action === 'watched' ? 'watched' : 'towatch';
+      }
+      
+      try {
+        if (isExternalItem) {
+          // API item - API library endpoint'ini kullan
+          let sourceId = currentItem.sourceId;
+          
+          if (!sourceId) {
+            if (currentItem.source === 'tmdb') {
+              sourceId = `tmdb_${currentItem.id || currentItem.external_api_id}`;
+            } else if (currentItem.source === 'google_books') {
+              sourceId = `google_books_${currentItem.id || currentItem.external_api_id}`;
+            } else if (currentItem.source === 'openlib') {
+              sourceId = `openlib_${currentItem.id || currentItem.external_api_id}`;
+            }
+          }
+          
+          const payload = {
+            user_id: currentUser.user_id,
+            status: status,
+            action: 'add',
+            title: currentItem.title,
+            item_type: currentItem.item_type,
+            poster_url: currentItem.poster_url || currentItem.posterUrl,
+            year: currentItem.year || currentItem.releaseDate?.split('-')[0],
+            description: currentItem.description || currentItem.overview
+          };
+          
+          console.log(`📤 API Kütüphaneye ekleniyor:`, sourceId, payload);
+          
+          fetch(`${API_URL}/api/library/${sourceId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              alert(`✅ ${action} işlemi başarılı!`);
+              console.log(`✅ API İçeriği Kütüphaneye Eklendi:`, data);
+            } else {
+              alert(`❌ Hata: ${data.detail || 'Bilinmeyen hata'}`);
+            }
+          })
+          .catch(err => {
+            console.error('❌ API Kütüphane hatası:', err);
+            alert('❌ İşlem sırasında hata oluştu');
+          });
+        } else {
+          // DB item - normal endpoint
+          const payload = {
+            user_id: currentUser.user_id,
+            status: status,
+            action: 'add'
+          };
+          
+          console.log(`📤 DB Kütüphaneye ekleniyor:`, currentItem.item_id, payload);
+          
+          fetch(`${API_URL}/${currentItem.item_id}/library`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              alert(`✅ ${action} işlemi başarılı!`);
+              console.log(`✅ DB İçeriği Kütüphaneye Eklendi:`, data);
+            } else {
+              alert(`❌ Hata: ${data.detail || 'Bilinmeyen hata'}`);
+            }
+          })
+          .catch(err => {
+            console.error('❌ DB Kütüphane hatası:', err);
+            alert('❌ İşlem sırasında hata oluştu');
+          });
+        }
+      } catch (err) {
+        console.error('❌ Hata:', err);
+        alert('❌ İşlem başarısız');
+      }
     }
 
-    function addCustomList() {
-      console.log('📋 Özel listeye ekle');
-      alert('Özel listeler menüsü açılacak (Demo)');
+    let currentListSort = 'recent'; // Default sort: recently created first
+
+    async function addCustomList() {
+      console.log('📋 Özel listeye ekle - Modal açılıyor');
+      
+      try {
+        // Kullanıcının özel listelerini getir
+        const response = await fetch(`${API_URL}/custom-lists/${currentUser.user_id}`);
+        const data = await response.json();
+        
+        const existingListsDiv = document.getElementById('existingLists');
+        
+        if (!data.success || !data.lists || data.lists.length === 0) {
+          // Özel liste yoksa, yeni liste oluştur formu göster
+          existingListsDiv.innerHTML = `
+            <div class="empty-lists">
+              <p>📭 Henüz hiç özel liste yok</p>
+              <p style="font-size: 12px; color: #bbb;">Aşağıda yeni bir liste oluşturun</p>
+            </div>
+          `;
+          showNewListForm();
+        } else {
+          // Listeleri sırala
+          let sortedLists = [...data.lists];
+          
+          if (currentListSort === 'recent') {
+            // En yeni oluşturulanlar önce
+            sortedLists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          } else if (currentListSort === 'name') {
+            // Alfabetik sıralama
+            sortedLists.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+          } else if (currentListSort === 'items') {
+            // Çok item'li olanlar önce
+            sortedLists.sort((a, b) => b.item_count - a.item_count);
+          }
+          
+          // Mevcut listeleri göster
+          let listHtml = '';
+          sortedLists.forEach((lst) => {
+            const description = lst.description ? `<div class="list-item-description">${lst.description}</div>` : '';
+            listHtml += `
+              <div class="list-item" onclick="addItemToList(${lst.list_id}, '${lst.name.replace(/'/g, "\\'")}')">
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span class="list-item-name">${lst.name}</span>
+                    <span class="list-item-count">📦 ${lst.item_count} item</span>
+                  </div>
+                  ${description}
+                </div>
+                <button class="list-delete-btn" onclick="event.stopPropagation(); deleteCustomList(${lst.list_id}, '${lst.name.replace(/'/g, "\\'")}')" title="Listeyi sil">🗑️</button>
+              </div>
+            `;
+          });
+          
+          // Sorting controls ekle
+          const sortingControls = `
+            <div class="list-sorting-controls">
+              <button class="sort-btn ${currentListSort === 'recent' ? 'active' : ''}" onclick="changeListSort('recent')" title="En yeni oluşturulanlar">🕐 Son Eklenenler</button>
+              <button class="sort-btn ${currentListSort === 'items' ? 'active' : ''}" onclick="changeListSort('items')" title="Çok item'li olanlar">📊 Popüler</button>
+              <button class="sort-btn ${currentListSort === 'name' ? 'active' : ''}" onclick="changeListSort('name')" title="Alfabetik">🔤 Alfabetik</button>
+            </div>
+          `;
+          
+          existingListsDiv.innerHTML = sortingControls + listHtml + `
+            <button class="new-list-btn" onclick="showNewListForm()">+ Yeni Liste Oluştur</button>
+          `;
+        }
+        
+        // Modal'ı aç
+        document.getElementById('listModal').classList.add('active');
+      } catch (err) {
+        console.error('❌ Özel liste hatası:', err);
+        alert('❌ Liste yüklenirken hata oluştu');
+      }
+    }
+
+    function changeListSort(sortType) {
+      currentListSort = sortType;
+      addCustomList(); // Listeyi yeniden yükle
+    }
+
+    function showNewListForm() {
+      document.getElementById('existingLists').style.display = 'none';
+      document.getElementById('newListForm').style.display = 'block';
+      document.getElementById('newListName').value = '';
+      document.getElementById('newListDescription').value = '';
+      setTimeout(() => document.getElementById('newListName').focus(), 100);
+    }
+
+    function cancelNewList() {
+      document.getElementById('newListForm').style.display = 'none';
+      document.getElementById('existingLists').style.display = 'block';
+      document.getElementById('newListName').value = '';
+      document.getElementById('newListDescription').value = '';
+    }
+
+    function handleEnter(event) {
+      if (event.key === 'Enter') {
+        createNewList();
+      }
+    }
+
+    async function createNewList() {
+      const newListName = document.getElementById('newListName').value.trim();
+      const newListDescription = document.getElementById('newListDescription').value.trim();
+      
+      if (!newListName) {
+        alert('❌ Liste adı boş bırakılamaz');
+        return;
+      }
+      
+      try {
+        // Yeni liste oluştur
+        const createResponse = await fetch(`${API_URL}/custom-lists`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUser.user_id,
+            name: newListName,
+            description: newListDescription
+          })
+        });
+        
+        const createData = await createResponse.json();
+        if (createData.success) {
+          const listId = createData.list_id;
+          
+          // Item'i listeye ekle
+          await addItemToList(listId, newListName);
+        } else {
+          alert(`❌ Hata: ${createData.detail || 'Liste oluşturulamadı'}`);
+        }
+      } catch (err) {
+        console.error('❌ Liste oluşturma hatası:', err);
+        alert('❌ Liste oluşturulurken hata oluştu');
+      }
+    }
+
+    async function addItemToList(listId, listName) {
+      try {
+        let itemIdToAdd = null;
+        let sourceIdToAdd = null;
+        
+        if (isExternalItem) {
+          // API itemi için source_id oluştur
+          if (currentItem.source === 'tmdb') {
+            sourceIdToAdd = `tmdb_${currentItem.id || currentItem.external_api_id}`;
+          } else if (currentItem.source === 'google_books') {
+            sourceIdToAdd = `google_books_${currentItem.id || currentItem.external_api_id}`;
+          } else if (currentItem.source === 'openlib') {
+            sourceIdToAdd = `openlib_${currentItem.id || currentItem.external_api_id}`;
+          }
+        } else {
+          // DB itemi için item_id
+          itemIdToAdd = currentItem.item_id;
+        }
+        
+        // Item'i listeye ekle
+        const addResponse = await fetch(`${API_URL}/custom-lists/${listId}/items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item_id: itemIdToAdd,
+            source_id: sourceIdToAdd,
+            action: 'add'
+          })
+        });
+        
+        const addData = await addResponse.json();
+        if (addData.success) {
+          alert(`✅ "${listName}" listesine eklendi!`);
+          closeListModal();
+          console.log(`✅ Listeye eklendi:`, addData);
+        } else {
+          alert(`❌ Hata: ${addData.detail || 'Bilinmeyen hata'}`);
+        }
+      } catch (err) {
+        console.error('❌ Item ekleme hatası:', err);
+        alert('❌ Item eklenirken hata oluştu');
+      }
+    }
+
+    async function deleteCustomList(listId, listName) {
+      if (!confirm(`"${listName}" listesini silmek istediğinizden emin misiniz?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/custom-lists/${listId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert(`✅ "${listName}" listesi silindi`);
+          // Modal'ı kapata ve yenile
+          closeListModal();
+          // Listeyi tekrar göster
+          setTimeout(() => addCustomList(), 500);
+        } else {
+          alert(`❌ Hata: ${data.detail || 'Liste silinemedi'}`);
+        }
+      } catch (err) {
+        console.error('❌ Liste silme hatası:', err);
+        alert('❌ Liste silinirken hata oluştu');
+      }
+    }
+
+    async function deleteCustomList(listId, listName) {
+      if (!confirm(`"${listName}" listesini silmek istediğinizden emin misiniz?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/custom-lists/${listId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert(`✅ "${listName}" listesi silindi!`);
+          // Modal'ı yenile
+          addCustomList();
+        } else {
+          alert(`❌ Hata: ${data.detail || 'Liste silinemedi'}`);
+        }
+      } catch (err) {
+        console.error('❌ Liste silme hatası:', err);
+        alert('❌ Liste silinirken hata oluştu');
+      }
+    }
+
+    function closeListModal() {
+      document.getElementById('listModal').classList.remove('active');
+      document.getElementById('newListForm').style.display = 'none';
+      document.getElementById('existingLists').style.display = 'block';
+      document.getElementById('newListName').value = '';
+      document.getElementById('newListDescription').value = '';
     }
 
     async function loadComments() {
@@ -928,6 +1699,13 @@
       const container = document.getElementById('commentsList');
       if (!container) return;
       
+      // Oy sayısını güncelle
+      const ratingCount = comments ? comments.length : 0;
+      const ratingCountEl = document.querySelector('.rating-text:nth-of-type(2)');
+      if (ratingCountEl) {
+        ratingCountEl.textContent = `${ratingCount} Oy`;
+      }
+      
       if (!comments || !comments.length) {
         const emptyMsg = isExternalItem 
           ? 'Bu içerik için henüz yorum yok' 
@@ -937,7 +1715,7 @@
       }
 
       container.innerHTML = comments.map((comment, idx) => {
-        const author = comment.author || comment.user_id || comment.username || 'Anonim';
+        const author = comment.username || comment.author || 'Anonim';
         const text = comment.content || comment.review_text || comment.text || '';
         const date = comment.created_at || comment.date || '';
         const rating = comment.rating || 0;
@@ -952,15 +1730,111 @@
               <span class="comment-date">${date ? formatDate(date) : '🌐 API'}</span>
             </div>
             <div class="comment-text">${text}</div>
-            ${!isExternalItem && comment.review_id && comment.user_id === currentUser.user_id ? `
+            ${comment.review_id && parseInt(comment.user_id) === parseInt(currentUser.user_id) ? `
               <div class="comment-actions">
-                <button class="comment-btn">✏️ Düzenle</button>
+                <button class="comment-btn" data-review-id="${comment.review_id}" data-comment-text="${text.replace(/"/g, '&quot;')}" onclick="editComment(this)">✏️ Düzenle</button>
                 <button class="comment-btn" onclick="deleteComment(${comment.review_id})">🗑️ Sil</button>
               </div>
             ` : ''}
           </div>
         `;
       }).join('');
+    }
+
+    async function loadRatings() {
+      try {
+        if (!currentItem.item_id) {
+          console.log('⚠️ item_id bulunamadı, ratings yüklenemedi');
+          renderRatings([]);
+          return;
+        }
+
+        console.log(`📥 Puanları Çekiliyor: /items/${currentItem.item_id}/ratings`);
+        const response = await fetch(`${API_URL}/${currentItem.item_id}/ratings`);
+        
+        if (!response.ok) {
+          console.error('❌ Puanlar Yanıt Hatası:', response.status);
+          renderRatings([]);
+          return;
+        }
+        
+        const ratings = await response.json();
+        console.log(`✅ Puanlar (${currentItem.item_id}): ${ratings.length} bulundu`, ratings);
+        
+        renderRatings(ratings);
+      } catch (error) {
+        console.error('❌ Puanlar Yüklenirken Hata:', error);
+        renderRatings([]);
+      }
+    }
+
+    function renderRatings(ratings) {
+      const container = document.getElementById('ratingsList');
+      if (!container) return;
+      
+      if (!ratings || !ratings.length) {
+        container.innerHTML = `<div class="empty-state">Bu içerik için henüz puan yok. Siz ilk puanı verin!</div>`;
+        return;
+      }
+
+      container.innerHTML = ratings.map((rating, idx) => {
+        const stars = '⭐'.repeat(Math.floor(rating.score / 2)) + (rating.score % 2 !== 0 ? '✨' : '');
+        const date = rating.created_at || '';
+        const isOwnRating = rating.user_id === currentUser.user_id;
+        
+        return `
+          <div class="rating-item" style="animation: slideInLeft 0.4s ease ${0.1 + idx * 0.05}s both;">
+            <div class="rating-item-header">
+              <div style="flex: 1;">
+                <span class="rating-user">👤 ${rating.username || 'Anonim'}</span>
+                <span style="margin-left: 10px; color: #ff9800; font-size: 18px;">${stars} <strong>${rating.score}/10</strong></span>
+              </div>
+              <span class="rating-date">${date ? formatDate(date) : ''}</span>
+            </div>
+            ${isOwnRating ? `
+              <div class="rating-actions">
+                <button class="comment-btn" onclick="deleteRating(${rating.rating_id}, ${currentItem.item_id})">🗑️ Sil</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function deleteRating(ratingId, itemId) {
+      if (confirm('Bu puanı silmek istediğinize emin misiniz?')) {
+        try {
+          console.log(`🗑️ Puan siliniyor: ${ratingId}`);
+          const response = await fetch(`${API_URL}/rating/${ratingId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Puan silindi:', data);
+            alert('✅ Puan silindi');
+            loadRatings(); // Puanları yenile
+            setTimeout(() => loadItemDetails(), 500);
+          } else {
+            const error = await response.text();
+            console.error('❌ Puan silme hatası:', response.status, error);
+            alert(`❌ Hata: ${error || 'Puan silinemedi'}`);
+          }
+        } catch (error) {
+          console.error('❌ Puan silme hatası:', error);
+          alert('❌ Puan silinirken hata oluştu');
+        }
+      }
+    }
+
+    function editComment(button) {
+      const reviewId = button.getAttribute('data-review-id');
+      const currentText = button.getAttribute('data-comment-text');
+      const newText = prompt('Yorumu düzenle:', currentText);
+      if (newText !== null && newText.trim()) {
+        performEditComment(reviewId, newText.trim());
+      }
     }
 
     async function submitComment() {
@@ -1042,8 +1916,52 @@
 
     function deleteComment(reviewId) {
       if (confirm('Yorumu silmek istediğinize emin misiniz?')) {
-        console.log('Yorum silme:', reviewId);
-        alert('Yorum silindi (Demo)');
+        performDeleteComment(reviewId);
+      }
+    }
+
+    async function performDeleteComment(reviewId) {
+      try {
+        const response = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          alert('✅ Yorum silindi');
+          loadComments(); // Yorum listesini yenile
+        } else {
+          const error = await response.text();
+          alert(`❌ Hata: ${error || 'Yorum silinemedi'}`);
+        }
+      } catch (error) {
+        console.error('❌ Yorum silme hatası:', error);
+        alert('❌ Yorum silinirken hata oluştu');
+      }
+    }
+
+    async function performEditComment(reviewId, newText) {
+      try {
+        const response = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            review_text: newText
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          alert('✅ Yorum güncelleştirildi');
+          loadComments(); // Yorum listesini yenile
+        } else {
+          const error = await response.text();
+          alert(`❌ Hata: ${error || 'Yorum güncelleştirilemedi'}`);
+        }
+      } catch (error) {
+        console.error('❌ Yorum güncelleme hatası:', error);
+        alert('❌ Yorum güncellenirken hata oluştu');
       }
     }
 

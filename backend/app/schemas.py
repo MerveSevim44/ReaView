@@ -45,21 +45,26 @@ class ItemOut(ItemBase):
 
 class ReviewCreate(BaseModel):
     user_id: int
-    item_id: int
+    item_id: Optional[int] = None
     review_text: str
-    rating: Optional[int] = None  # 1-5
+    rating: Optional[int] = None  # 1-10
 
 
 class ReviewOut(BaseModel):
 	review_id: int
 	user_id: int
-	item_id: int
+	item_id: Optional[int] = None
 	review_text: str
 	rating: Optional[int] = None
 	created_at: Optional[datetime] = None
 	username: Optional[str] = None
 
 	model_config = {"from_attributes": True}
+
+
+class ReviewUpdate(BaseModel):
+	review_text: Optional[str] = None
+	rating: Optional[int] = None
 
 
 class UserOut(BaseModel):
