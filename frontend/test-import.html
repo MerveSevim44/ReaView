@@ -137,7 +137,7 @@
     <h1>🎬 📖 Test: İçerik İçe Aktar</h1>
     
     <div class="info">
-      <strong>ℹ️ Test için:</strong> Bir film veya kitap arayın ve veritabanına ekleyin. Başarılı olursa, item.html?id=... sayfasında görebileceksiniz.
+      <strong>ℹ️ Test için:</strong> Bir film veya kitap arayın ve veritabanına ekleyin. Başarılı olursa, items.html?id=... sayfasında görebileceksiniz.
     </div>
     
     <div class="form-group">
@@ -226,7 +226,7 @@
         const result = await response.json();
         
         if (result.item_id) {
-          const link = `<a href="/frontend/item.html?id=${result.item_id}" target="_blank">item.html?id=${result.item_id}</a>`;
+          const link = `<a href="/frontend/items.html?id=${result.item_id}" target="_blank">items.html?id=${result.item_id}</a>`;
           showResult(
             `${result.message}<br><br>Öğeyi görmek için: ${link}`,
             result.item || result,

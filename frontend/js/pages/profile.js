@@ -173,7 +173,7 @@ function displayItems(container, reviews) {
   }
 
   container.innerHTML = reviews.map((review) => `
-    <div class="item-card" onclick="window.location.href='./item.html?id=${review.item_id}'">
+    <div class="item-card" onclick="window.location.href='./items.html?id=${review.item_id}'">>
       <img src="${review.item_image || "https://via.placeholder.com/150x220"}" alt="${review.item_title}" class="item-image" />
       <div class="item-title">${review.item_title}</div>
     </div>
