@@ -156,3 +156,113 @@ def get_current_user(
 def logout():
     """Kullanıcı çıkış yap"""
     return {"message": "Başarıyla çıkış yapıldı"}
+
+
+# ============== PASSWORD RESET ==============
+
+@router.post("/forgot-password")
+def forgot_password(email: str = Body(...), db: Session = Depends(get_db)):
+    """Şifre sıfırlama isteği - e-posta gönder"""
+    try:
+        user = db.query(models.User).filter(models.User.email == email).first()
+        if not user:
+            # Don't reveal if email exists (security best practice)
+            print(f"⚠️ Password reset request for non-existent email: {email}")
+            return {"message": "E-posta adresiniz kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir"}
+        
+        # Generate reset token
+        reset_token = secrets.token_urlsafe(32)
+        
+        # Set token to expire in 1 hour
+        from datetime import timedelta
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        
+        # Delete any existing tokens for this user
+        db.query(models.PasswordResetToken).filter(
+            models.PasswordResetToken.user_id == user.user_id,
+            models.PasswordResetToken.used_at.is_(None)
+        ).delete()
+        
+        # Create new token
+        token_record = models.PasswordResetToken(
+            user_id=user.user_id,
+            token=reset_token,
+            expires_at=expires_at
+        )
+        db.add(token_record)
+        db.commit()
+        
+        # TODO: Send email with reset link
+        reset_link = f"http://localhost:3000/reset-password.html?token={reset_token}"
+        print(f"🔗 Password reset link for {email}: {reset_link}")
+        
+        # For development, return the link in response (REMOVE IN PRODUCTION)
+        return {
+            "message": "E-posta adresiniz kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir",
+            "reset_link": reset_link  # REMOVE IN PRODUCTION - only for testing
+        }
+    except Exception as e:
+        print(f"❌ Forgot password error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
+
+
+@router.post("/reset-password")
+def reset_password(
+    token: str = Body(...),
+    new_password: str = Body(...),
+    db: Session = Depends(get_db)
+):
+    """Şifremi sıfırla"""
+    try:
+        # Validate password
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="Şifre en az 8 karakter olmalı")
+        
+        if not any(c.isupper() for c in new_password):
+            raise HTTPException(status_code=400, detail="Şifre en az bir büyük harf içermelidir")
+        
+        if not any(c.isdigit() for c in new_password):
+            raise HTTPException(status_code=400, detail="Şifre en az bir sayı içermelidir")
+        
+        # Find token
+        token_record = db.query(models.PasswordResetToken).filter(
+            models.PasswordResetToken.token == token
+        ).first()
+        
+        if not token_record:
+            raise HTTPException(status_code=400, detail="Geçersiz veya süresi dolmuş bağlantı")
+        
+        # Check if token has expired
+        if datetime.utcnow() > token_record.expires_at:
+            raise HTTPException(status_code=400, detail="Bağlantının süresi dolmuş")
+        
+        # Check if token already used
+        if token_record.used_at:
+            raise HTTPException(status_code=400, detail="Bu bağlantı zaten kullanılmış")
+        
+        # Get user
+        user = db.query(models.User).filter(
+            models.User.user_id == token_record.user_id
+        ).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+        
+        # Update password
+        user.password_hash = hash_password(new_password)
+        
+        # Mark token as used
+        token_record.used_at = datetime.utcnow()
+        
+        db.commit()
+        
+        print(f"✅ Password reset for user: {user.email}")
+        return {
+            "message": "Şifre başarıyla sıfırlandı",
+            "email": user.email
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Reset password error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")

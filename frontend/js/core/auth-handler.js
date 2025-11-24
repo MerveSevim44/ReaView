@@ -1,63 +1,77 @@
-// frontend/js/auth.js
-import { loginUser, registerUser, API_URL } from "./api.js";
-import { sessionManager } from "./session.js";
+/**
+ * Auth Handler
+ * Authentication logic
+ */
+
+import { loginUser, registerUser } from "./api-client.js";
+import { sessionManager } from "./session-manager.js";
 
 /**
- * Giriş formunu işle
+ * Handle login form
  */
 export async function handleLogin(email, password) {
   try {
     const response = await loginUser(email, password);
-    
-    // Oturumu başlat
+
+    // Start session
     sessionManager.setSession(response.user, response.token);
-    
-    // Başarı mesajı
-    console.log("✅ Giriş başarılı!", response.user);
+
+    console.log("✅ Login successful!", response.user);
     return { success: true, data: response };
   } catch (error) {
-    console.error("❌ Giriş hatası:", error.message);
+    console.error("❌ Login error:", error.message);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Kayıt formunu işle
+ * Handle registration form
  */
 export async function handleRegister(username, email, password) {
   try {
     const response = await registerUser(username, email, password);
-    
-    // Kayıttan sonra otomatik giriş yap
+
+    // Auto login after registration
     sessionManager.setSession(response.user, response.token);
-    
-    console.log("✅ Kayıt başarılı!", response.user);
+
+    console.log("✅ Registration successful!", response.user);
     return { success: true, data: response };
   } catch (error) {
-    console.error("❌ Kayıt hatası:", error.message);
+    console.error("❌ Registration error:", error.message);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Çıkış işlemi
+ * Handle logout
  */
 export function handleLogout() {
   sessionManager.clearSession();
-  console.log("✅ Çıkış işlemi tamamlandı");
+  console.log("✅ Logout successful");
   return true;
 }
 
 /**
- * Aktif kullanıcıyı kontrol et
+ * Get current user
  */
 export function getCurrentUser() {
   return sessionManager.getCurrentUser();
 }
 
 /**
- * Kullanıcı giriş yaptı mı kontrol et
+ * Check if user is authenticated
  */
 export function isAuthenticated() {
   return sessionManager.isLoggedIn();
+}
+
+/**
+ * Require authentication (redirect if not logged in)
+ */
+export function requireAuth() {
+  if (!sessionManager.isLoggedIn()) {
+    window.location.href = "./login.html";
+    return false;
+  }
+  return true;
 }

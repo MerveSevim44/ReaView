@@ -1,9 +1,14 @@
-// frontend/js/navbar.js
-import { sessionManager } from "./session.js";
-import { handleLogout } from "./auth.js";
+/**
+ * Navbar Component
+ * Shared navigation bar for all pages
+ */
+
+import { sessionManager } from "../core/session-manager.js";
+import { handleLogout } from "../core/auth-handler.js";
+import { getUserInitials } from "../utils/formatters.js";
 
 /**
- * Navbar'ı HTML'e enjekte et
+ * Initialize navbar
  */
 export function initializeNavbar() {
   const navbarHTML = `
@@ -21,13 +26,13 @@ export function initializeNavbar() {
       </div>
 
       <div class="navbar-user">
-        <!-- Giriş yapılmamışsa göster -->
+        <!-- Show when not logged in -->
         <div class="auth-buttons" id="authButtons">
           <a href="./login.html" class="btn-login">Giriş Yap</a>
           <a href="./login.html" class="btn-register">Kayıt Ol</a>
         </div>
 
-        <!-- Giriş yapıldıysa göster -->
+        <!-- Show when logged in -->
         <div class="user-dropdown" id="userDropdown" style="display: none;">
           <div class="user-info" id="userInfo">
             <div class="user-avatar" id="userAvatar">?</div>
@@ -45,46 +50,46 @@ export function initializeNavbar() {
     </nav>
   `;
 
-  // Body'nin en başına navbar'ı ekle
+  // Insert navbar at the beginning of body
   document.body.insertAdjacentHTML("afterbegin", navbarHTML);
 
-  // CSS dosyasını ekle
+  // Add CSS file
   const link = document.createElement("link");
   link.rel = "stylesheet";
   link.href = "./css/navbar.css";
   document.head.appendChild(link);
 
-  // Event listener'ları ekle
+  // Setup event listeners
   setupNavbarEvents();
 
-  // İlk yüklemede kullanıcı durumunu kontrol et
+  // Check user status on load
   updateNavbarUser();
 
-  // Oturum değişikliğini dinle
+  // Listen for session changes
   window.addEventListener("userSessionChanged", updateNavbarUser);
   window.addEventListener("userSessionCleared", updateNavbarUser);
 }
 
 /**
- * Navbar olaylarını kur
+ * Setup navbar event listeners
  */
 function setupNavbarEvents() {
   const userInfo = document.getElementById("userInfo");
   const dropdownMenu = document.getElementById("dropdownMenu");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  // Dropdown menüsünü aç/kapat
+  // Toggle dropdown menu
   userInfo?.addEventListener("click", (e) => {
     e.stopPropagation();
-    dropdownMenu.classList.toggle("show");
+    dropdownMenu?.classList.toggle("show");
   });
 
-  // Dışa tıklanırsa menüyü kapat
+  // Close menu when clicking outside
   document.addEventListener("click", () => {
     dropdownMenu?.classList.remove("show");
   });
 
-  // Çıkış düğmesi
+  // Logout handler
   logoutBtn?.addEventListener("click", (e) => {
     e.preventDefault();
     if (confirm("Çıkış yapmak istediğinize emin misiniz?")) {
@@ -93,7 +98,47 @@ function setupNavbarEvents() {
     }
   });
 
-  // Aktif sayfayı vurgula
+  // Highlight current page
+  highlightActivePage();
+}
+
+/**
+ * Update navbar user information
+ */
+function updateNavbarUser() {
+  const currentUser = sessionManager.getCurrentUser();
+  const authButtons = document.getElementById("authButtons");
+  const userDropdown = document.getElementById("userDropdown");
+  const userName = document.getElementById("userName");
+  const userAvatar = document.getElementById("userAvatar");
+
+  if (currentUser) {
+    // User is logged in
+    authButtons.style.display = "none";
+    userDropdown.style.display = "block";
+
+    // Display user info
+    userName.textContent = currentUser.username || "User";
+    const initials = getUserInitials(currentUser.username || "U");
+    userAvatar.textContent = initials;
+
+    // Update profile link
+    const profileLink = document.querySelector('a[href="./profile.html"]');
+    if (profileLink) {
+      const userId = currentUser.user_id || currentUser.id;
+      profileLink.href = `./profile.html?user=${userId}`;
+    }
+  } else {
+    // User is not logged in
+    authButtons.style.display = "flex";
+    userDropdown.style.display = "none";
+  }
+}
+
+/**
+ * Highlight the active page in navbar
+ */
+function highlightActivePage() {
   const currentPage = window.location.pathname.split("/").pop() || "feed.html";
   document.querySelectorAll(".nav-link").forEach((link) => {
     const href = link.getAttribute("href");
@@ -106,42 +151,7 @@ function setupNavbarEvents() {
 }
 
 /**
- * Navbar kullanıcı bilgilerini güncelle
- */
-function updateNavbarUser() {
-  const currentUser = sessionManager.getCurrentUser();
-  const authButtons = document.getElementById("authButtons");
-  const userDropdown = document.getElementById("userDropdown");
-  const userName = document.getElementById("userName");
-  const userAvatar = document.getElementById("userAvatar");
-
-  if (currentUser) {
-    // Kullanıcı giriş yapmış
-    authButtons.style.display = "none";
-    userDropdown.style.display = "block";
-
-    // Kullanıcı bilgilerini göster
-    userName.textContent = currentUser.username || "Kullanıcı";
-    const initials = (currentUser.username || "U")
-      .substring(0, 2)
-      .toUpperCase();
-    userAvatar.textContent = initials;
-
-    // Profil sayfasında kendi profilime git
-    const profileLink = document.querySelector('a[href="./profile.html"]');
-    if (profileLink) {
-      const userId = currentUser.user_id || currentUser.id;
-      profileLink.href = `./profile.html?user=${userId}`;
-    }
-  } else {
-    // Kullanıcı giriş yapmamış
-    authButtons.style.display = "flex";
-    userDropdown.style.display = "none";
-  }
-}
-
-/**
- * Sayfa yüklendiğinde navbar'ı başlat
+ * Initialize navbar on page load
  */
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeNavbar);

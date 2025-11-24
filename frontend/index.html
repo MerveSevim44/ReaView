@@ -176,9 +176,9 @@
   </div>
 
   <script type="module">
-    import { sessionManager } from "./js/session.js";
+    import { sessionManager } from "./js/core/session-manager.js";
 
-    // Eğer kullanıcı zaten giriş yapmışsa feed'e yönlendir
+    // Redirect to feed if already logged in
     if (sessionManager.isLoggedIn()) {
       window.location.href = "./feed.html";
     }
