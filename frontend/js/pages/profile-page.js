@@ -28,6 +28,9 @@ const profileBox = document.getElementById("profileBox");
 const activitiesMount = document.getElementById("activities");
 const reviewsMount = document.getElementById("reviews");
 const followListMount = document.getElementById("followList");
+const libraryContent = document.getElementById("libraryContent");
+const customLists = document.getElementById("customLists");
+const createListBtn = document.getElementById("createListBtn");
 
 // Track following status
 let followingStatus = {};
@@ -60,12 +63,16 @@ async function initializePage() {
       loadProfile(),
       loadActivities(),
       loadReviews(),
-      loadFollowingStatus()
+      loadFollowingStatus(),
+      loadLibrary(),
+      loadCustomLists()
     ]);
 
     // Setup interactive elements
     setupFollowButton();
     setupFollowLists();
+    setupLibraryTabs();
+    setupCreateListButton();
   } catch (error) {
     console.error("Initialization error:", error);
     Loader.showError(profileBox, error.message);
@@ -359,5 +366,84 @@ async function handleFollowClick(e) {
     showErrorToast(error.message);
   } finally {
     button.disabled = false;
+  }
+}
+
+/**
+ * Load and display user library
+ */
+async function loadLibrary() {
+  try {
+    const editProfileBtn = document.getElementById("editProfileBtn");
+    const isOwnProfile = currentUserId === profileUserId;
+
+    // Show edit button only on own profile
+    if (editProfileBtn && isOwnProfile) {
+      editProfileBtn.style.display = "block";
+    }
+
+    libraryContent.innerHTML = `
+      <div class="empty-state">
+        <p>📚 Henüz hiç içerik eklenmedi</p>
+      </div>
+    `;
+  } catch (error) {
+    Loader.showError(libraryContent, `Kütüphane yüklenemedi: ${error.message}`);
+  }
+}
+
+/**
+ * Load and display custom lists
+ */
+async function loadCustomLists() {
+  try {
+    const isOwnProfile = currentUserId === profileUserId;
+    const createListBtn = document.getElementById("createListBtn");
+
+    // Show create list button only on own profile
+    if (createListBtn && isOwnProfile) {
+      createListBtn.style.display = "block";
+    }
+
+    customLists.innerHTML = `
+      <div class="empty-state">
+        <p>✨ Henüz özel liste oluşturulmamış</p>
+      </div>
+    `;
+  } catch (error) {
+    Loader.showError(customLists, `Listeler yüklenemedi: ${error.message}`);
+  }
+}
+
+/**
+ * Setup library tabs
+ */
+function setupLibraryTabs() {
+  const tabs = document.querySelectorAll(".tab-btn");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      tabs.forEach(t => t.classList.remove("active"));
+      e.target.classList.add("active");
+      
+      const tabName = e.target.dataset.tab;
+      console.log("Tab clicked:", tabName);
+      // Sekmeler ilerde api ile güncellenecek
+    });
+  });
+}
+
+/**
+ * Setup create list button
+ */
+function setupCreateListButton() {
+  const createListBtn = document.getElementById("createListBtn");
+  if (createListBtn) {
+    createListBtn.addEventListener("click", () => {
+      const listName = prompt("Liste adını girin:");
+      if (listName && listName.trim()) {
+        showSuccess(`"${listName}" listesi oluşturulacak`);
+        // API çağrısı eklenecek
+      }
+    });
   }
 }

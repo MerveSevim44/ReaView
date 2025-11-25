@@ -23,13 +23,48 @@
     <div class="profile-layout">
       <!-- Left Sidebar: Profile Info -->
       <aside class="profile-sidebar">
+
+
         <div class="card profile-card" id="profileBox">
           <div class="loading">Yükleniyor...</div>
         </div>
+
+                <button id="editProfileBtn" class="btn-primary btn-block" style="display: none; margin-top: 10px;">
+          ✏️ Profili Düzenle
+        </button>
+        
       </aside>
       
       <!-- Main Content -->
       <main class="profile-content">
+
+
+                <!-- Library Tabs Section -->
+        <section class="card library-section">
+          <h2>📚 Kütüphanem</h2>
+          <div class="library-tabs">
+            <button class="tab-btn active" data-tab="watched">🎬 İzlediklerim</button>
+            <button class="tab-btn" data-tab="watchlist">📋 İzlenecekler</button>
+            <button class="tab-btn" data-tab="read">📖 Okuduklarım</button>
+            <button class="tab-btn" data-tab="readlist">📝 Okunacaklar</button>
+          </div>
+          <div id="libraryContent" class="content-box">
+            <div class="loading">Yükleniyor...</div>
+          </div>
+        </section>
+
+        <!-- Custom Lists Section -->
+        <section class="card lists-section">
+          <div class="lists-header">
+            <h2>✨ Özel Listelerim</h2>
+            <button id="createListBtn" class="btn-primary btn-small" style="display: none;">+ Yeni Liste</button>
+          </div>
+          <div id="customLists" class="content-box">
+            <div class="loading">Yükleniyor...</div>
+          </div>
+        </section>
+
+
         <!-- Follow Section -->
         <section class="card follow-section">
           <h2>👥 Takip & Takipçiler</h2>
