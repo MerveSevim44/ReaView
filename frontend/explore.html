@@ -479,17 +479,24 @@
 
     const API_BASE = "http://127.0.0.1:8000";
     const API_URL = `${API_BASE}/items`;
-    const searchInput = document.getElementById('searchInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const topRatedContainer = document.getElementById('topRatedContainer');
-    const mostPopularContainer = document.getElementById('mostPopularContainer');
-    const clearFiltersBtn = document.getElementById('clearFilters');
     
-    const filterType = document.getElementById('filterType');
-    const filterYear = document.getElementById('filterYear');
-    const filterRating = document.getElementById('filterRating');
-    const sortBy = document.getElementById('sortBy');
+    // DOM elementlerini sonradan yükle (değişkenler olarak tanımla)
+    let searchInput, searchBtn, resultsContainer, topRatedContainer, mostPopularContainer, clearFiltersBtn;
+    let filterType, filterYear, filterRating, sortBy;
+    
+    // DOM elementlerini elde et
+    const initDOMElements = () => {
+      searchInput = document.getElementById('searchInput');
+      searchBtn = document.getElementById('searchBtn');
+      resultsContainer = document.getElementById('resultsContainer');
+      topRatedContainer = document.getElementById('topRatedContainer');
+      mostPopularContainer = document.getElementById('mostPopularContainer');
+      clearFiltersBtn = document.getElementById('clearFilters');
+      filterType = document.getElementById('filterType');
+      filterYear = document.getElementById('filterYear');
+      filterRating = document.getElementById('filterRating');
+      sortBy = document.getElementById('sortBy');
+    };
 
     // ============ SESSION STORAGE: ARAMA SONUÇLARINı KAYDET ============
     const STORAGE_KEY = 'searchState';
@@ -525,9 +532,6 @@
         }
       }
     };
-
-    // Sayfa yüklendiğinde önceki arama sonuçlarını geri yükle
-    window.addEventListener('load', restoreSearchState);
 
     // ============ RENDER HELPER ============
     // Global items array - API items için index ref
@@ -795,11 +799,14 @@
 
     // ============ VİTRİN: EN YÜKSEK PUANLILAN ============
     const loadTopRated = async () => {
+      console.log('📌 loadTopRated başladı');
       try {
         const response = await fetch(`${API_URL}/featured/top-rated?limit=6`);
+        console.log('📡 Response OK:', response.ok, 'Status:', response.status);
         if (!response.ok) throw new Error('API Hatası');
         
         let items = await response.json();
+        console.log('✅ Veri parse edildi:', items.length, 'item');
         
         // Her item'a sourceId ekle (API items için)
         items.forEach(item => {
@@ -813,19 +820,23 @@
         
         console.log('⭐ En Yüksek Puanlılar:', items);
         renderResults(items, topRatedContainer);
+        console.log('✅ renderResults çağrıldı');
       } catch (error) {
         console.error('Top Rated Yükleme Hatası:', error);
-        topRatedContainer.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi</p></div>`;
+        topRatedContainer.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi: ${error.message}</p></div>`;
       }
     };
 
     // ============ VİTRİN: EN POPÜLERLERİ ============
     const loadPopular = async () => {
+      console.log('📌 loadPopular başladı');
       try {
         const response = await fetch(`${API_URL}/featured/popular?limit=6`);
+        console.log('📡 Response OK:', response.ok, 'Status:', response.status);
         if (!response.ok) throw new Error('API Hatası');
         
         let items = await response.json();
+        console.log('✅ Veri parse edildi:', items.length, 'item');
         
         // Her item'a sourceId ekle (API items için)
         items.forEach(item => {
@@ -839,81 +850,90 @@
         
         console.log('🔥 En Popülerler:', items);
         renderResults(items, mostPopularContainer);
+        console.log('✅ renderResults çağrıldı');
       } catch (error) {
         console.error('Most Popular Yükleme Hatası:', error);
-        mostPopularContainer.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi</p></div>`;
+        mostPopularContainer.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi: ${error.message}</p></div>`;
       }
     };
 
-    // ============ EVENT LİSTENERS ============
-    searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') performSearch();
-    });
-
-    // Filtreler değişince otomatik arama yap
-    [filterType, filterYear, filterRating, sortBy].forEach(filter => {
-      filter.addEventListener('change', () => {
-        if (searchInput.value.trim().length >= 2) {
-          performSearch();
-        }
+    // ============ INITIALIZATION - SAYFA LOAD'LANINCA ÇALIŞ ============
+    window.addEventListener('load', async () => {
+      console.log('📍 Page loaded, initializing...');
+      
+      // 1️⃣ DOM elementlerini elde et
+      initDOMElements();
+      console.log('✅ DOM elements loaded');
+      
+      // 2️⃣ EVENT LİSTENERS EKLE
+      searchBtn.addEventListener('click', performSearch);
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
       });
-    });
 
-    clearFiltersBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      filterType.value = '';
-      filterYear.value = '';
-      filterRating.value = '';
-      sortBy.value = 'relevance';
-      resultsContainer.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">🔍</div>
-          <p>Aramaya başlamak için yukarıya bir şey yazın ve Ara butonuna tıklayın</p>
-        </div>
-      `;
-    });
-
-    // ============ BAŞLANGIÇ ============
-    if (!sessionManager.isLoggedIn()) {
-      resultsContainer.innerHTML = `
-        <div class="auth-message">
-          <h3>👋 Hoş geldiniz!</h3>
-          <p>Keşfet özelliğini kullanmak için lütfen giriş yapınız.</p>
-          <a href="./login.html">Giriş Yap veya Kayıt Ol</a>
-        </div>
-      `;
-      topRatedContainer.innerHTML = resultsContainer.innerHTML;
-      mostPopularContainer.innerHTML = resultsContainer.innerHTML;
-    } else {
-      // Önceki arama sonuçlarını restore et
-      const savedState = sessionStorage.getItem(STORAGE_KEY);
-      if (savedState) {
-        try {
-          const state = JSON.parse(savedState);
-          searchInput.value = state.query || '';
-          filterType.value = state.filters?.type || '';
-          filterYear.value = state.filters?.year || '';
-          filterRating.value = state.filters?.rating || '';
-          sortBy.value = state.filters?.sort || 'relevance';
-          
-          const savedItems = sessionStorage.getItem(ITEMS_STORAGE_KEY);
-          if (savedItems) {
-            currentItems = JSON.parse(savedItems);
-            renderResults(currentItems, resultsContainer);
-            console.log('✅ Önceki arama geri yüklendi:', state.query);
+      // Filtreler değişince otomatik arama yap
+      [filterType, filterYear, filterRating, sortBy].forEach(filter => {
+        filter.addEventListener('change', () => {
+          if (searchInput.value.trim().length >= 2) {
+            performSearch();
           }
-        } catch (e) {
-          console.error('Arama restore hatası:', e);
-          loadTopRated();
-          loadPopular();
-        }
+        });
+      });
+
+      clearFiltersBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        filterType.value = '';
+        filterYear.value = '';
+        filterRating.value = '';
+        sortBy.value = 'relevance';
+        resultsContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <p>Aramaya başlamak için yukarıya bir şey yazın ve Ara butonuna tıklayın</p>
+          </div>
+        `;
+      });
+
+      // 3️⃣ BAŞLANGIÇ KONTROLÜü
+      if (!sessionManager.isLoggedIn()) {
+        resultsContainer.innerHTML = `
+          <div class="auth-message">
+            <h3>👋 Hoş geldiniz!</h3>
+            <p>Keşfet özelliğini kullanmak için lütfen giriş yapınız.</p>
+            <a href="./login.html">Giriş Yap veya Kayıt Ol</a>
+          </div>
+        `;
+        topRatedContainer.innerHTML = resultsContainer.innerHTML;
+        mostPopularContainer.innerHTML = resultsContainer.innerHTML;
       } else {
-        // İlk ziyaret - vitrin bölümlerini yükle
-        loadTopRated();
-        loadPopular();
+        // Önceki arama sonuçlarını restore et
+        const savedState = sessionStorage.getItem(STORAGE_KEY);
+        if (savedState) {
+          try {
+            const state = JSON.parse(savedState);
+            searchInput.value = state.query || '';
+            filterType.value = state.filters?.type || '';
+            filterYear.value = state.filters?.year || '';
+            filterRating.value = state.filters?.rating || '';
+            sortBy.value = state.filters?.sort || 'relevance';
+            
+            const savedItems = sessionStorage.getItem(ITEMS_STORAGE_KEY);
+            if (savedItems) {
+              currentItems = JSON.parse(savedItems);
+              renderResults(currentItems, resultsContainer);
+              console.log('✅ Önceki arama geri yüklendi:', state.query);
+            }
+          } catch (e) {
+            console.error('Arama restore hatası:', e);
+          }
+        }
+        
+        // VİTRİN BÖLÜMLERINI HER ZAMAN YÜKLEYİ (önceki arama olsa da olmasada)
+        console.log('🎬 Loading showcases...');
+        await loadTopRated();
+        await loadPopular();
       }
-    }
+    });
   </script>
 </body>
 </html>
