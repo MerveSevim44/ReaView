@@ -71,9 +71,16 @@ class UserOut(BaseModel):
 	user_id: int
 	username: str
 	email: str
+	bio: Optional[str] = None
+	avatar_url: Optional[str] = None
 	created_at: Optional[datetime] = None
 
 	model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+	bio: Optional[str] = None
+	avatar_url: Optional[str] = None
 
 
 class UserRegister(BaseModel):

@@ -37,14 +37,25 @@ class ApiClient {
       options.body = JSON.stringify(data);
     }
 
-    const response = await fetch(url, options);
+    try {
+      console.log(`📡 [${method}] ${url}`, data || '');
+      
+      const response = await fetch(url, options);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || `HTTP ${response.status}`);
+      if (!response.ok) {
+        const error = await response.json();
+        const errorMsg = error.detail || `HTTP ${response.status}`;
+        console.error(`❌ [${method}] ${url} - ${errorMsg}`, error);
+        throw new Error(errorMsg);
+      }
+
+      const result = await response.json();
+      console.log(`✅ [${method}] ${url}`, result);
+      return result;
+    } catch (err) {
+      console.error(`🔴 API ERROR [${method}] ${url}:`, err.message);
+      throw err;
     }
-
-    return await response.json();
   }
 
   /**

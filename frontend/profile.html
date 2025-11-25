@@ -23,13 +23,11 @@
     <div class="profile-layout">
       <!-- Left Sidebar: Profile Info -->
       <aside class="profile-sidebar">
-
-
         <div class="card profile-card" id="profileBox">
           <div class="loading">Yükleniyor...</div>
         </div>
 
-                <button id="editProfileBtn" class="btn-primary btn-block" style="display: none; margin-top: 10px;">
+        <button id="editProfileBtn" class="btn-primary btn-block" style="display: none;">
           ✏️ Profili Düzenle
         </button>
         
@@ -37,9 +35,7 @@
       
       <!-- Main Content -->
       <main class="profile-content">
-
-
-                <!-- Library Tabs Section -->
+        <!-- Library Tabs Section -->
         <section class="card library-section">
           <h2>📚 Kütüphanem</h2>
           <div class="library-tabs">
@@ -111,5 +107,10 @@
 
   <!-- Load Profile Module -->
   <script type="module" src="./js/pages/profile-page.js"></script>
+  <script>
+    fetch('http://127.0.0.1:8000/users/4')
+      .then(r => r.json())
+      .then(u => console.log('Avatar URL from API:', u.avatar_url))
+  </script>
 </body>
 </html>

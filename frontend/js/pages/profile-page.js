@@ -16,8 +16,16 @@ import { formatDate, formatDateTime } from "../utils/formatters.js";
 import { getQueryParam } from "../utils/helpers.js";
 import { Loader, showSuccess, showErrorToast } from "../components/loader.js";
 
+// API Base URL
+const API_BASE = "http://127.0.0.1:8000";
+
 // Current logged-in user
 const currentUserId = sessionManager.getCurrentUserId();
+
+// Uyumluluk fonksiyonları
+const showError = (msg) => {
+  showErrorToast(msg);
+};
 
 // Profile user from URL
 const profileUserId = Number(getQueryParam("user") || getQueryParam("id")) || currentUserId;
@@ -34,6 +42,12 @@ const createListBtn = document.getElementById("createListBtn");
 
 // Track following status
 let followingStatus = {};
+
+// Track if viewing own profile
+let isOwnProfile = false;
+
+// Track user bio
+let userBio = "";
 
 /**
  * Initialize profile page
@@ -72,6 +86,7 @@ async function initializePage() {
     setupFollowButton();
     setupFollowLists();
     setupLibraryTabs();
+    setupEditProfileButton();
     setupCreateListButton();
   } catch (error) {
     console.error("Initialization error:", error);
@@ -85,23 +100,43 @@ async function initializePage() {
 async function loadProfile() {
   try {
     const user = await getUser(profileUserId);
-    const isOwnProfile = currentUserId === profileUserId;
+    isOwnProfile = currentUserId === profileUserId;
+    userBio = user.bio || "";
+
+    // Avatar URL - fallback to placeholder if file:// protocol
+    let avatarUrl = user.avatar_url;
+    console.log(`📸 Avatar URL from API: ${avatarUrl}`);
+    console.log(`📸 Starts with file://? ${avatarUrl?.startsWith('file://')}`);
+    
+    if (!avatarUrl || avatarUrl.startsWith('file://')) {
+      avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=667eea&color=fff&bold=true`;
+      console.log(`📸 Using fallback: ${avatarUrl}`);
+    }
+    console.log(`📸 Final avatarUrl: ${avatarUrl}`);
 
     profileBox.innerHTML = `
       <div class="profile-avatar">
-        <img src="${user.avatar_url || "https://via.placeholder.com/120"}"
+        <img src="${avatarUrl}"
              alt="${user.username} avatar"
+             onerror="console.error('Avatar load failed:', this.src); this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=667eea&color=fff&bold=true'"
+             onload="console.log('Avatar loaded successfully:', this.src)"
              width="120"
              height="120">
       </div>
       <h2>@${user.username}</h2>
       <p class="muted">${user.email}</p>
       ${isOwnProfile ? `<span class="profile-badge">🔵 Bu senin profilin</span>` : ""}
-      ${user.bio ? `<p class="bio">${user.bio}</p>` : `<p class="muted bio">Biyografi yok.</p>`}
+      ${user.bio ? `<p class="bio" id="profileBio">${user.bio}</p>` : `<p class="muted bio" id="profileBio">Biyografi yok.</p>`}
       <p class="muted" style="margin-top: 16px;">
         📅 Katıldı: ${formatDate(user.created_at)}
       </p>
     `;
+
+    // Show edit button only on own profile
+    const editProfileBtn = document.getElementById("editProfileBtn");
+    if (editProfileBtn && isOwnProfile) {
+      editProfileBtn.style.display = "block";
+    }
   } catch (error) {
     Loader.showError(profileBox, `Profil yüklenemedi: ${error.message}`);
   }
@@ -374,22 +409,82 @@ async function handleFollowClick(e) {
  */
 async function loadLibrary() {
   try {
-    const editProfileBtn = document.getElementById("editProfileBtn");
-    const isOwnProfile = currentUserId === profileUserId;
+    // Fetch user library
+    const API_BASE = "http://127.0.0.1:8000";
+    const url1 = `${API_BASE}/items/library/${profileUserId}`;
+    console.log(`📡 Kütüphane yükleniyor: ${url1}`);
+    
+    const response = await fetch(url1, {
+      headers: {
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      }
+    });
 
-    // Show edit button only on own profile
-    if (editProfileBtn && isOwnProfile) {
-      editProfileBtn.style.display = "block";
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`❌ Kütüphane yükleme hatası: ${response.status}`, errorData);
+      throw new Error("Kütüphane yüklenemedi");
+    }
+    console.log("✅ Kütüphane başarıyla yüklendi");
+    
+    const libraryData = await response.json();
+    console.log("📚 User Library:", libraryData);
+
+    if (!libraryData.items || libraryData.items.length === 0) {
+      libraryContent.innerHTML = `
+        <div class="empty-state">
+          <p>📚 Henüz hiç içerik eklenmedi</p>
+        </div>
+      `;
+      return;
     }
 
-    libraryContent.innerHTML = `
-      <div class="empty-state">
-        <p>📚 Henüz hiç içerik eklenmedi</p>
-      </div>
-    `;
+    // Group items by status
+    const grouped = {};
+    libraryData.items.forEach(item => {
+      if (!grouped[item.status]) grouped[item.status] = [];
+      grouped[item.status].push(item);
+    });
+
+    // Cache grouped items for tab switching
+    window.cachedLibraryGroups = grouped;
+
+    // Render watched tab by default
+    renderLibraryTab("watched", grouped);
+    
   } catch (error) {
+    console.error("Library error:", error);
     Loader.showError(libraryContent, `Kütüphane yüklenemedi: ${error.message}`);
   }
+}
+
+/**
+ * Render library tab content
+ */
+function renderLibraryTab(status, grouped) {
+  const items = grouped[status] || [];
+  
+  if (items.length === 0) {
+    libraryContent.innerHTML = `
+      <div class="empty-state">
+        <p>📚 Bu kategoride içerik yok</p>
+      </div>
+    `;
+    return;
+  }
+
+  libraryContent.innerHTML = items.map(item => `
+    <div class="library-item" style="padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 12px;">
+      <img src="${item.poster_url || 'https://via.placeholder.com/60x90'}" 
+           alt="${item.title}"
+           style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;">
+      <div style="flex: 1;">
+        <h3 style="margin: 0 0 4px 0; font-size: 14px;">${item.title}</h3>
+        <p style="margin: 0; color: #999; font-size: 12px;">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</p>
+        <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">Eklendi: ${new Date(item.added_at).toLocaleDateString('tr-TR')}</p>
+      </div>
+    </div>
+  `).join("");
 }
 
 /**
@@ -405,12 +500,49 @@ async function loadCustomLists() {
       createListBtn.style.display = "block";
     }
 
-    customLists.innerHTML = `
-      <div class="empty-state">
-        <p>✨ Henüz özel liste oluşturulmamış</p>
+    // Fetch custom lists
+    const API_BASE = "http://127.0.0.1:8000";
+    const url2 = `${API_BASE}/items/custom-lists/${profileUserId}`;
+    console.log(`📡 Özel Listeler yükleniyor: ${url2}`);
+    
+    const response = await fetch(url2, {
+      headers: {
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`❌ Özel Listeler yükleme hatası: ${response.status}`, errorData);
+      throw new Error("Listeler yüklenemedi");
+    }
+    console.log("✅ Özel Listeler başarıyla yüklendi");
+    
+    const listsData = await response.json();
+    console.log("✨ Custom Lists:", listsData);
+
+    if (!listsData.lists || listsData.lists.length === 0) {
+      customLists.innerHTML = `
+        <div class="empty-state">
+          <p>✨ Henüz özel liste oluşturulmamış</p>
+        </div>
+      `;
+      return;
+    }
+
+    customLists.innerHTML = listsData.lists.map(list => `
+      <div class="custom-list-item" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.3s;" 
+           onmouseover="this.style.backgroundColor='#f5f5f5'" 
+           onmouseout="this.style.backgroundColor='transparent'"
+           onclick="window.location.href='list-detail.html?id=${list.list_id}'">
+        <h3 style="margin: 0 0 4px 0; font-size: 14px;">📝 ${list.name}</h3>
+        <p style="margin: 0; color: #999; font-size: 12px;">${list.description || 'Açıklama yok'}</p>
+        <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">📊 ${list.item_count} içerik</p>
       </div>
-    `;
+    `).join("");
+    
   } catch (error) {
+    console.error("Custom lists error:", error);
     Loader.showError(customLists, `Listeler yüklenemedi: ${error.message}`);
   }
 }
@@ -420,16 +552,122 @@ async function loadCustomLists() {
  */
 function setupLibraryTabs() {
   const tabs = document.querySelectorAll(".tab-btn");
+  let groupedItems = {}; // Cache grouped items
+  
+  // Store grouped items from loadLibrary
+  const originalLoadLibrary = loadLibrary;
+  window.cachedLibraryGroups = {};
+  
   tabs.forEach(tab => {
-    tab.addEventListener("click", (e) => {
+    tab.addEventListener("click", async (e) => {
       tabs.forEach(t => t.classList.remove("active"));
       e.target.classList.add("active");
       
       const tabName = e.target.dataset.tab;
-      console.log("Tab clicked:", tabName);
-      // Sekmeler ilerde api ile güncellenecek
+      console.log("📂 Tab clicked:", tabName);
+      
+      // Map tab names to database status values
+      const statusMap = {
+        'watched': 'watched',
+        'watchlist': 'towatch',
+        'read': 'read',
+        'readlist': 'toread'
+      };
+      
+      const status = statusMap[tabName];
+      
+      // If we have cached data, render it
+      if (window.cachedLibraryGroups && window.cachedLibraryGroups[status]) {
+        renderLibraryTab(status, window.cachedLibraryGroups);
+      } else {
+        // Otherwise fetch for this specific status
+        try {
+          const API_BASE = "http://127.0.0.1:8000";
+          const url3 = `${API_BASE}/items/library/${profileUserId}?status=${status}`;
+          console.log(`📡 Kütüphane sekmesi yükleniyor (${status}): ${url3}`);
+          
+          const response = await fetch(url3, {
+            headers: {
+              "Authorization": `Bearer ${sessionManager.getToken()}`
+            }
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`❌ Kütüphane sekmesi yükleme hatası (${status}): ${response.status}`, errorData);
+            throw new Error("Veri yüklenemedi");
+          }
+          console.log(`✅ Kütüphane sekmesi (${status}) başarıyla yüklendi`);
+          
+          const data = await response.json();
+          
+          if (data.items && data.items.length > 0) {
+            const grouped = {};
+            grouped[status] = data.items;
+            renderLibraryTab(status, grouped);
+          } else {
+            libraryContent.innerHTML = `<div class="empty-state"><p>📚 Bu kategoride içerik yok</p></div>`;
+          }
+        } catch (error) {
+          console.error("Tab error:", error);
+          Loader.showError(libraryContent, `Yükleme başarısız: ${error.message}`);
+        }
+      }
     });
   });
+}
+
+function setupEditProfileButton() {
+  const editProfileBtn = document.getElementById("editProfileBtn");
+  const token = sessionManager.getToken();
+  console.log(`🔍 Edit button setup: isOwnProfile=${isOwnProfile}, token=${token ? "✅" : "❌ null"}, button=${editProfileBtn ? "✅" : "❌ null"}`);
+  
+  if (editProfileBtn && isOwnProfile && token) {
+    editProfileBtn.addEventListener("click", async () => {
+      console.log("✏️ Profili düzenle tıklandı");
+      
+      const newBio = prompt("Biyografını güncelle:", userBio || "");
+      
+      if (newBio === null) return; // Kullanıcı iptal etti
+      
+      try {
+        const url = `${API_BASE}/users/${currentUserId}`;
+        console.log(`📡 Profil güncelleniyor: ${url}`, { bio: newBio });
+        
+        const response = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sessionManager.getToken()}`
+          },
+          body: JSON.stringify({ bio: newBio })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`❌ Profil güncelleme hatası: ${response.status}`, errorData);
+          alert("❌ Profil güncellenirken hata oluştu!");
+          return;
+        }
+        
+        const updatedUser = await response.json();
+        console.log("✅ Profil başarıyla güncellendi!", updatedUser);
+        
+        userBio = updatedUser.bio;
+        showSuccess("✅ Biyografi başarıyla güncellendi!");
+        
+        // UI'ı güncellemek için profili yeniden yükle
+        setTimeout(() => {
+          loadProfile();
+        }, 500);
+      } catch (error) {
+        console.error(`❌ Profil güncelleme isteği başarısız:`, error.message);
+        alert("❌ Profil güncellenirken hata oluştu!");
+      }
+    });
+  } else if (!token) {
+    console.log("⚠️ Token bulunamadı - Profili düzenle butonu devre dışı");
+  }
 }
 
 /**
@@ -438,11 +676,49 @@ function setupLibraryTabs() {
 function setupCreateListButton() {
   const createListBtn = document.getElementById("createListBtn");
   if (createListBtn) {
-    createListBtn.addEventListener("click", () => {
+    createListBtn.addEventListener("click", async () => {
       const listName = prompt("Liste adını girin:");
-      if (listName && listName.trim()) {
-        showSuccess(`"${listName}" listesi oluşturulacak`);
-        // API çağrısı eklenecek
+      if (!listName || !listName.trim()) return;
+
+      const description = prompt("Liste açıklaması (opsiyonel):", "");
+      
+      try {
+        const url4 = `${API_BASE}/items/custom-lists`;
+        console.log(`📡 Yeni liste oluşturuluyor: ${url4}`, { name: listName, description });
+        
+        const response = await fetch(url4, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${sessionManager.getToken()}`
+          },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            name: listName.trim(),
+            description: description || "",
+            is_public: 0
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error(`❌ Liste oluşturma hatası: ${response.status}`, result);
+          throw new Error(result.detail || "Liste oluşturulamadı");
+        }
+        console.log("✅ Liste başarıyla oluşturuldu", result);
+
+        console.log("✅ Liste oluşturuldu:", result);
+        showSuccess(`"${listName}" listesi başarıyla oluşturuldu!`);
+        
+        // Listeyi yeniden yükle
+        setTimeout(() => {
+          loadCustomLists();
+        }, 500);
+
+      } catch (error) {
+        console.error("❌ Liste oluşturma hatası:", error);
+        showError(`Hata: ${error.message}`);
       }
     });
   }

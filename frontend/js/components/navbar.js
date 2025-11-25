@@ -11,53 +11,61 @@ import { getUserInitials } from "../utils/formatters.js";
  * Initialize navbar
  */
 export function initializeNavbar() {
-  const navbarHTML = `
-    <nav class="navbar">
-      <a href="./feed.html" class="navbar-brand">
-        📚 BiblioNet
-      </a>
+  const navbarContent = `
+    <a href="./feed.html" class="navbar-brand">
+      📚 BiblioNet
+    </a>
 
-      <div class="navbar-center">
-        <ul class="navbar-nav">
-          <li><a href="./feed.html" class="nav-link">Akış</a></li>
-          <li><a href="./explore.html" class="nav-link">Keşfet</a></li>
-          <li><a href="./items.html" class="nav-link">İçerikler</a></li>
-        </ul>
+    <div class="navbar-center">
+      <ul class="navbar-nav">
+        <li><a href="./feed.html" class="nav-link">Akış</a></li>
+        <li><a href="./explore.html" class="nav-link">Keşfet</a></li>
+        <li><a href="./items.html" class="nav-link">İçerikler</a></li>
+      </ul>
+    </div>
+
+    <div class="navbar-user">
+      <!-- Show when not logged in -->
+      <div class="auth-buttons" id="authButtons">
+        <a href="./login.html" class="btn-login">Giriş Yap</a>
+        <a href="./login.html" class="btn-register">Kayıt Ol</a>
       </div>
 
-      <div class="navbar-user">
-        <!-- Show when not logged in -->
-        <div class="auth-buttons" id="authButtons">
-          <a href="./login.html" class="btn-login">Giriş Yap</a>
-          <a href="./login.html" class="btn-register">Kayıt Ol</a>
+      <!-- Show when logged in -->
+      <div class="user-dropdown" id="userDropdown" style="display: none;">
+        <div class="user-info" id="userInfo">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <div class="user-name" id="userName">Yükleniyor...</div>
         </div>
-
-        <!-- Show when logged in -->
-        <div class="user-dropdown" id="userDropdown" style="display: none;">
-          <div class="user-info" id="userInfo">
-            <div class="user-avatar" id="userAvatar">?</div>
-            <div class="user-name" id="userName">Yükleniyor...</div>
-          </div>
-          <div class="dropdown-menu" id="dropdownMenu">
-            <a href="./profile.html">👤 Profilim</a>
-            <a href="./feed.html">📰 Akışım</a>
-            <div class="dropdown-divider"></div>
-            <a href="./settings.html">⚙️ Ayarlar</a>
-            <button id="logoutBtn" class="logout-btn">🚪 Çıkış Yap</button>
-          </div>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <a href="./profile.html">👤 Profilim</a>
+          <a href="./feed.html">📰 Akışım</a>
+          <div class="dropdown-divider"></div>
+          <a href="./settings.html">⚙️ Ayarlar</a>
+          <button id="logoutBtn" class="logout-btn">🚪 Çıkış Yap</button>
         </div>
       </div>
-    </nav>
+    </div>
   `;
 
-  // Insert navbar at the beginning of body
-  document.body.insertAdjacentHTML("afterbegin", navbarHTML);
+  // Check if navbar element exists (e.g., in list-detail.html)
+  const existingNavbar = document.getElementById("navbar");
+  if (existingNavbar && existingNavbar.classList.contains("navbar")) {
+    // Navbar container exists, just fill it
+    existingNavbar.innerHTML = navbarContent;
+  } else {
+    // No navbar element, create one
+    const navbarHTML = `<nav class="navbar">${navbarContent}</nav>`;
+    document.body.insertAdjacentHTML("afterbegin", navbarHTML);
+  }
 
-  // Add CSS file
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = "./css/navbar.css";
-  document.head.appendChild(link);
+  // Add CSS file if not already added
+  if (!document.querySelector('link[href="./css/navbar.css"]')) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "./css/navbar.css";
+    document.head.appendChild(link);
+  }
 
   // Setup event listeners
   setupNavbarEvents();

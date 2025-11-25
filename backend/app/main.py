@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from .routes import auth, items, reviews, feed, users, external, follows
 from sqlalchemy import text
 from .database import SessionLocal, engine, init_db
@@ -23,6 +24,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount avatars directory as static files
+avatars_dir = Path(__file__).parent.parent / "avatars"
+if avatars_dir.exists():
+    app.mount("/avatars", StaticFiles(directory=str(avatars_dir)), name="avatars")
 
 # Include routers from route modules. Each route module should expose an APIRouter
 # object named `router`. If a module is missing `router` this will raise an

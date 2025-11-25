@@ -1321,3 +1321,85 @@ def delete_custom_list(list_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ LİSTELER: İÇERİĞİ GETIR ============
+@router.get("/lists/{list_id}/items")
+def get_list_items(list_id: int, db: Session = Depends(get_db)):
+    """
+    Liste içindeki tüm itemleri getir
+    list_id: İçeriğini almak istediğimiz listenin ID'si
+    """
+    try:
+        # Liste var mı?
+        custom_list = db.query(models.CustomList).filter(
+            models.CustomList.list_id == list_id
+        ).first()
+        
+        if not custom_list:
+            raise HTTPException(status_code=404, detail="Liste bulunamadı")
+        
+        # Listedeki itemleri getir
+        list_items = db.query(models.ListItem).filter(
+            models.ListItem.list_id == list_id
+        ).order_by(models.ListItem.position).all()
+        
+        # Item detaylarıyla dönüş yap
+        items = []
+        for list_item in list_items:
+            item_data = {
+                "list_item_id": list_item.list_item_id,
+                "position": list_item.position,
+                "source_id": list_item.source_id,
+                "item_id": list_item.item_id
+            }
+            
+            # DB itemse detaylar ekle
+            if list_item.item_id:
+                db_item = db.query(models.Item).filter(
+                    models.Item.item_id == list_item.item_id
+                ).first()
+                if db_item:
+                    item_data.update({
+                        "title": db_item.title,
+                        "item_type": db_item.item_type,
+                        "year": db_item.year,
+                        "poster_url": db_item.poster_url,
+                        "description": db_item.description,
+                        "genres": db_item.genres,
+                        "external_rating": db_item.external_rating
+                    })
+            elif list_item.source_id:
+                # API item ise source_id'den bul
+                api_item = db.query(models.Item).filter(
+                    models.Item.external_api_id == list_item.source_id
+                ).first()
+                if api_item:
+                    item_data.update({
+                        "title": api_item.title,
+                        "item_type": api_item.item_type,
+                        "year": api_item.year,
+                        "poster_url": api_item.poster_url,
+                        "description": api_item.description,
+                        "genres": api_item.genres,
+                        "external_rating": api_item.external_rating
+                    })
+            
+            items.append(item_data)
+        
+        return {
+            "success": True,
+            "list_id": list_id,
+            "list_name": custom_list.name,
+            "list_description": custom_list.description,
+            "is_public": custom_list.is_public,
+            "created_at": custom_list.created_at.isoformat() if custom_list.created_at else None,
+            "updated_at": custom_list.updated_at.isoformat() if custom_list.updated_at else None,
+            "items": items,
+            "item_count": len(items)
+        }
+    
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
