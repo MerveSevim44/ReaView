@@ -1420,12 +1420,6 @@
           if (currentListSort === 'recent') {
             // En yeni oluşturulanlar önce
             sortedLists.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-          } else if (currentListSort === 'name') {
-            // Alfabetik sıralama
-            sortedLists.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
-          } else if (currentListSort === 'items') {
-            // Çok item'li olanlar önce
-            sortedLists.sort((a, b) => b.item_count - a.item_count);
           }
           
           // Mevcut listeleri göster
@@ -1450,8 +1444,7 @@
           const sortingControls = `
             <div class="list-sorting-controls">
               <button class="sort-btn ${currentListSort === 'recent' ? 'active' : ''}" onclick="changeListSort('recent')" title="En yeni oluşturulanlar">🕐 Son Eklenenler</button>
-              <button class="sort-btn ${currentListSort === 'items' ? 'active' : ''}" onclick="changeListSort('items')" title="Çok item'li olanlar">📊 Popüler</button>
-              <button class="sort-btn ${currentListSort === 'name' ? 'active' : ''}" onclick="changeListSort('name')" title="Alfabetik">🔤 Alfabetik</button>
+
             </div>
           `;
           
