@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..database import get_db
@@ -117,7 +117,7 @@ def register(
 
 @router.get("/current-user")
 def get_current_user(
-    authorization: str = None,
+    authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
     """Aktif kullanıcı bilgisini al"""
@@ -140,12 +140,7 @@ def get_current_user(
         if not user:
             raise HTTPException(status_code=401, detail="Token geçersiz")
         
-        return {
-            "user_id": user.user_id,
-            "id": user.user_id,
-            "username": user.username,
-            "email": user.email
-        }
+        return user
     except HTTPException:
         raise
     except Exception as e:
