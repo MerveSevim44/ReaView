@@ -237,11 +237,11 @@ export async function unfollowUser(userId) {
 
 // ============= FEED ENDPOINTS =============
 
-export async function getFeed(userId = null) {
+export async function getFeed(userId = null, skip = 0, limit = 15) {
   const client = new ApiClient();
-  let endpoint = ROUTES.FEED;
+  let endpoint = `${ROUTES.FEED}?skip=${skip}&limit=${limit}`;
   if (userId) {
-    endpoint += `?user_id=${userId}`;
+    endpoint += `&user_id=${userId}`;
   }
   return client.get(endpoint);
 }

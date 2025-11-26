@@ -7,6 +7,7 @@
   
   <!-- Page-specific CSS -->
   <link rel="stylesheet" href="./css/feed.css">
+  <link rel="stylesheet" href="./css/navbar.css">
   
   <style>
     main {
@@ -24,45 +25,249 @@
     #feed-container {
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 20px;
     }
 
-    .card {
+    /* Aktivite Kartı */
+    .activity-card {
       background: white;
       border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 0;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       transition: all 0.3s ease;
+      overflow: hidden;
     }
 
-    .card:hover {
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    .activity-card:hover {
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.15);
       border-color: #667eea;
     }
 
-    .card b {
+    /* Header - Kullanıcı bilgisi ve aksiyon */
+    .activity-header {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 12px;
+    }
+
+    .activity-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .activity-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .activity-user-info {
+      flex: 1;
+    }
+
+    .activity-username {
+      font-weight: 600;
       color: #333;
-      display: block;
-      margin-bottom: 8px;
+      cursor: pointer;
+      text-decoration: none;
     }
 
-    .card em {
+    .activity-username:hover {
+      color: #667eea;
+      text-decoration: underline;
+    }
+
+    .activity-action-text {
+      font-size: 13px;
       color: #666;
-      display: block;
-      margin: 8px 0;
-      font-style: italic;
+      margin-top: 2px;
     }
 
-    .card small {
-      color: #999;
+    .activity-timestamp {
       font-size: 12px;
+      color: #999;
+      white-space: nowrap;
     }
 
-    .loading {
+    /* Body - İçerik gösterimi */
+    .activity-body {
+      padding: 16px;
+    }
+
+    /* Rating kartı için */
+    .activity-body.rating-type {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .rating-poster {
+      width: 80px;
+      height: 120px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+
+    .rating-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .rating-content {
+      flex: 1;
+    }
+
+    .rating-content h4 {
+      margin: 0 0 8px 0;
+      color: #333;
+      font-size: 16px;
+    }
+
+    .rating-score {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffa500;
+      margin-top: 8px;
+    }
+
+    /* Review kartı için */
+    .activity-body.review-type {
+      display: flex;
+      gap: 16px;
+    }
+
+    .review-poster {
+      width: 70px;
+      height: 105px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+
+    .review-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .review-content {
+      flex: 1;
+    }
+
+    .review-content h4 {
+      margin: 0 0 8px 0;
+      color: #333;
+      font-size: 16px;
+    }
+
+    .review-excerpt {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 8px 0;
+    }
+
+    .review-read-more {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .review-read-more:hover {
+      text-decoration: underline;
+    }
+
+    /* Footer - Etkileşim butonları */
+    .activity-footer {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid #f0f0f0;
+      background: #fafafa;
+    }
+
+    .btn-action {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: white;
+      color: #666;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-action:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-action.active {
+      background: #667eea;
+      color: white;
+    }
+
+    /* Pagination */
+    #load-more-container {
       text-align: center;
-      padding: 40px;
+      padding: 20px;
+    }
+
+    .btn-load-more {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-load-more:hover {
+      background: #5568d3;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-load-more:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
       color: #999;
+    }
+
+    .empty-state p {
+      margin: 10px 0;
+      font-size: 16px;
     }
 
     .auth-message {
@@ -84,6 +289,12 @@
     .auth-message a:hover {
       text-decoration: underline;
     }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
   </style>
 </head>
 <body>
@@ -95,6 +306,9 @@
     <div id="feed-container">
       <div class="loading">Yükleniyor...</div>
     </div>
+    <div id="load-more-container" style="display: none;">
+      <button class="btn-load-more" id="load-more-btn">Daha Fazla Yükle</button>
+    </div>
   </main>
 
   <!-- Load Navbar Module -->
@@ -102,14 +316,5 @@
 
   <!-- Load Feed Module -->
   <script type="module" src="./js/pages/feed-page.js"></script>
-
-  <!-- Service Worker for offline support -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js")
-        .then(reg => console.log("✅ Service Worker registered"))
-        .catch(err => console.warn("Service Worker failed:", err));
-    }
-  </script>
 </body>
 </html>
