@@ -117,3 +117,25 @@ class ActivityWithDetailsOut(BaseModel):
 
 	model_config = {"from_attributes": True}
 
+
+class FollowCreate(BaseModel):
+	follower_id: int
+	followee_id: int
+
+
+class FollowOut(BaseModel):
+	follower_id: int
+	followee_id: int
+	followed_at: Optional[datetime] = None
+
+	model_config = {"from_attributes": True}
+
+
+class UserWithFollowInfo(UserOut):
+	"""User ile follow bilgisi"""
+	is_following: Optional[bool] = False
+	followers_count: Optional[int] = 0
+	following_count: Optional[int] = 0
+
+	model_config = {"from_attributes": True}
+

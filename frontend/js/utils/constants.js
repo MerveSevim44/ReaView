@@ -104,10 +104,10 @@ export const ROUTES = {
     FOLLOWERS: "/users/:id/followers"
   },
   FOLLOWS: {
-    FOLLOW: "/follows/:id/follow",
-    UNFOLLOW: "/follows/:id/unfollow",
-    FOLLOWING: "/follows/:id/following",
-    FOLLOWERS: "/follows/:id/followers"
+    FOLLOW: "/users/:id/follow",
+    UNFOLLOW: "/users/:id/unfollow",
+    FOLLOWING: "/users/:id/following",
+    FOLLOWERS: "/users/:id/followers"
   },
   FEED: "/feed",
   EXTERNAL: {
