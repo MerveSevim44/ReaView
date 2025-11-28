@@ -31,6 +31,15 @@ def follow_user(
 
     follow = models.Follow(follower_id=follower_id, followee_id=followee_id, followed_at=datetime.utcnow())
     db.add(follow)
+    db.flush()  # Get the ID before commit
+    
+    # Activity kaydı oluştur
+    activity = models.Activity(
+        user_id=follower_id,
+        activity_type="follow",
+        related_user_id=followee_id
+    )
+    db.add(activity)
     db.commit()
     db.refresh(follow)
     return {"message": "Takip edildi", "followee_id": followee_id, "follower_id": follower_id}

@@ -391,35 +391,8 @@ def add_to_list(item_id: int, list_id: int = Query(...)):
 
 
 # ============================================
-# DETAIL PAGE ENDPOINTS
+# DETAIL PAGE ENDPOINTS (DUPLICATE REMOVED - Using first definition above)
 # ============================================
-
-# 📖 İçerik detayını getir
-@router.get("/{item_id}", response_model=schemas.ItemOut)
-def get_item_detail(item_id: int, db: Session = Depends(get_db)):
-    """İçeriğin detaylı bilgisini getir"""
-    item = db.query(models.Item).filter(models.Item.item_id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="İçerik bulunamadı")
-    
-    rating_info = calculate_hybrid_rating(item_id, item, db)
-    
-    item_dict = {
-        "item_id": item.item_id,
-        "title": item.title,
-        "item_type": item.item_type,
-        "description": item.description,
-        "poster_url": item.poster_url,
-        "year": item.year,
-        "authors": item.authors,
-        "director": item.director,
-        "actors": item.actors,
-        "page_count": item.page_count,
-        "genres": item.genres,
-        "created_at": item.created_at,
-        **rating_info
-    }
-    return item_dict
 
 
 # 💬 İçeriğin tüm yorumlarını getir
@@ -530,6 +503,16 @@ def add_comment(item_id: int, review: schemas.ReviewCreate, db: Session = Depend
     )
     
     db.add(new_review)
+    db.flush()  # Get the ID before commit
+    
+    # Activity kaydı oluştur
+    activity = models.Activity(
+        user_id=review.user_id,
+        activity_type="review",
+        item_id=item_id,
+        review_id=new_review.review_id
+    )
+    db.add(activity)
     db.commit()
     db.refresh(new_review)
     
@@ -689,6 +672,15 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
         )
         
         db.add(new_review)
+        db.flush()  # Get the ID before commit
+        
+        # Activity kaydı oluştur (API item'ı için item_id NULL olur, sadece review_id set edilir)
+        activity = models.Activity(
+            user_id=user_id,
+            activity_type="review",
+            review_id=new_review.review_id
+        )
+        db.add(activity)
         db.commit()
         db.refresh(new_review)
         
@@ -792,6 +784,15 @@ def rate_item(item_id: int, rating_data: dict, db: Session = Depends(get_db)):
                 score=rating
             )
             db.add(new_rating)
+            db.flush()  # Get the ID before commit
+            
+            # Activity kaydı oluştur (yeni rating oluşturulduğunda)
+            activity = models.Activity(
+                user_id=user_id,
+                activity_type="rating",
+                item_id=item_id
+            )
+            db.add(activity)
             db.commit()
             db.refresh(new_rating)
             
@@ -983,6 +984,15 @@ def create_custom_list(data: dict = Body(...), db: Session = Depends(get_db)):
             is_public=is_public
         )
         db.add(new_list)
+        db.flush()  # Get the ID before commit
+        
+        # Activity kaydı oluştur
+        activity = models.Activity(
+            user_id=user_id,
+            activity_type="list_add",
+            list_id=new_list.list_id
+        )
+        db.add(activity)
         db.commit()
         db.refresh(new_list)
         
@@ -1097,6 +1107,16 @@ def add_to_custom_list(list_id: int, data: dict = Body(...), db: Session = Depen
                 position=position
             )
             db.add(list_item)
+            db.flush()  # Get the ID before commit
+            
+            # Activity kaydı oluştur (item listeye eklendiğinde)
+            activity = models.Activity(
+                user_id=custom_list.user_id,
+                activity_type="list_add",
+                list_id=list_id,
+                item_id=item_id
+            )
+            db.add(activity)
             db.commit()
         
         elif action == "remove":

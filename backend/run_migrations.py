@@ -30,38 +30,38 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     # SQLite fallback
     DATABASE_URL = f"sqlite:///{backend_dir / 'dev.db'}"
-    print(f"⚠️  DATABASE_URL not set. Using SQLite: {DATABASE_URL}")
+    print(f"WARNING: DATABASE_URL not set. Using SQLite: {DATABASE_URL}")
 
-print(f"🔗 Database URL: {DATABASE_URL}")
+print(f"INFO: Database URL: {DATABASE_URL}")
 
 # Engine oluştur
 try:
     engine = create_engine(DATABASE_URL, echo=True)
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
-    print("✅ Database connection successful")
+    print("SUCCESS: Database connection successful")
 except Exception as e:
-    print(f"❌ Database connection failed: {e}")
+    print(f"ERROR: Database connection failed: {e}")
     sys.exit(1)
 
 # Migration dosyalarını bul
 migration_files = sorted(migrations_dir.glob("*.sql"))
 
 if not migration_files:
-    print(f"⚠️  No migration files found in {migrations_dir}")
+    print(f"WARNING: No migration files found in {migrations_dir}")
     sys.exit(0)
 
-print(f"\n📋 Found {len(migration_files)} migration files:")
+print(f"\nFound {len(migration_files)} migration files:")
 for f in migration_files:
     print(f"   - {f.name}")
 
 # Her migration dosyasını çalıştır
-print("\n🚀 Running migrations...\n")
+print("\nRunning migrations...\n")
 results = []
 failed = False
 
 for migration_file in migration_files:
-    print(f"⏳ Running {migration_file.name}...", end=" ")
+    print(f"Running {migration_file.name}...", end=" ")
     
     try:
         with open(migration_file, "r") as f:
@@ -75,18 +75,18 @@ for migration_file in migration_files:
             db.execute(text(statement))
         
         db.commit()
-        print("✅ Success")
-        results.append((migration_file.name, "✅ Success"))
+        print("SUCCESS")
+        results.append((migration_file.name, "SUCCESS"))
         
     except Exception as e:
         error_msg = str(e)
         # Some "errors" are OK (like column already exists)
         if "already exists" in error_msg or "duplicate column" in error_msg:
-            print(f"⚠️  Column might already exist (OK)")
-            results.append((migration_file.name, "⚠️  Column already exists"))
+            print(f"WARNING - Column might already exist (OK)")
+            results.append((migration_file.name, "WARNING - Column already exists"))
         else:
-            print(f"❌ Error: {error_msg}")
-            results.append((migration_file.name, f"❌ {error_msg[:50]}"))
+            print(f"ERROR: {error_msg}")
+            results.append((migration_file.name, f"ERROR: {error_msg[:50]}"))
             failed = True
         db.rollback()
 
@@ -101,10 +101,10 @@ for filename, status in results:
 print("="*60)
 
 if failed:
-    print("\n⚠️  Some migrations failed. Check the errors above.")
+    print("\nWARNING: Some migrations failed. Check the errors above.")
     sys.exit(1)
 else:
-    print("\n✅ All migrations completed successfully!")
+    print("\nSUCCESS: All migrations completed successfully!")
     sys.exit(0)
 
 db.close()

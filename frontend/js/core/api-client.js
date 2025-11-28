@@ -30,7 +30,8 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     const options = {
       method,
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
+      mode: 'cors'
     };
 
     if (data && (method === "POST" || method === "PUT")) {

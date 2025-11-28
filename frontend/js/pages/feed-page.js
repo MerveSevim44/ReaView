@@ -164,7 +164,8 @@ async function loadMoreActivities() {
  */
 function renderActivityCard(activity) {
   const { activity_id, activity_type, created_at, user_id, username, avatar_url, 
-           item_id, title, item_type, poster_url, year, review_text, rating_score } = activity;
+           item_id, title, item_type, poster_url, year, review_text, rating_score,
+           like_count = 0, comment_count = 0 } = activity;
 
   const timestamp = formatRelativeTime(created_at);
   const displayName = username || `Kullanıcı #${user_id}`;
@@ -183,16 +184,16 @@ function renderActivityCard(activity) {
   // Body bölümünü aktivite türüne göre render et
   let bodyHtml = "";
   if (activity_type === "rating" && item_id) {
-    bodyHtml = renderRatingBody(title, item_type, poster_url, year, rating_score);
+    bodyHtml = renderRatingBody(title, item_type, poster_url, year, rating_score, item_id);
   } else if (activity_type === "review" && item_id) {
-    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text);
+    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, activity_id);
   } else {
     bodyHtml = renderGenericBody(title);
   }
 
   // Kart HTML'i
   return `
-    <div class="activity-card" data-activity-id="${activity_id}" data-activity-type="${activity_type}">
+    <div class="activity-card" data-activity-id="${activity_id}" data-activity-type="${activity_type}" data-item-id="${item_id}">
       <!-- Header -->
       <div class="activity-header">
         <div class="activity-avatar">
@@ -212,11 +213,11 @@ function renderActivityCard(activity) {
       <div class="activity-footer">
         <button class="btn-action btn-like" title="Beğen">
           <span class="like-icon">🤍</span>
-          <span class="like-count">0</span>
+          <span class="like-count">${like_count}</span>
         </button>
         <button class="btn-action btn-comment" title="Yorum Yap">
           <span class="comment-icon">💬</span>
-          <span class="comment-count">0</span>
+          <span class="comment-count">${comment_count}</span>
         </button>
         <button class="btn-action btn-share" title="Paylaş">
           <span class="share-icon">📤</span>
@@ -231,7 +232,7 @@ function renderActivityCard(activity) {
  * Rating aktivitesi body'si
  * Gösterim: Poster + Yıldız/Puan
  */
-function renderRatingBody(title, itemType, posterUrl, year, ratingScore) {
+function renderRatingBody(title, itemType, posterUrl, year, ratingScore, itemId) {
   // Yıldız gösterimi (1-10 puanı 5 yıldıza çevir)
   const stars = Math.round((ratingScore / 10) * 5);
   let starDisplay = "★".repeat(stars) + "☆".repeat(5 - stars);
@@ -240,7 +241,7 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore) {
   const displayPoster = posterUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120'%3E%3Crect fill='%23f0f0f0' width='80' height='120'/%3E%3Ctext x='50%' y='50%' font-size='12' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
 
   return `
-    <div class="activity-body rating-type">
+    <div class="activity-body rating-type" data-item-id="${itemId}">
       <div class="rating-poster">
         <img src="${displayPoster}" alt="${title}" />
       </div>
@@ -260,7 +261,7 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore) {
  * Review aktivitesi body'si
  * Gösterim: Poster + Excerpt (ilk 150-200 char) + "daha fazlasını oku" linki
  */
-function renderReviewBody(title, itemType, posterUrl, reviewText) {
+function renderReviewBody(title, itemType, posterUrl, reviewText, reviewId) {
   // Review metni truncate et (150 karakter)
   const maxExcerptLength = 150;
   const excerpt = reviewText && reviewText.length > maxExcerptLength 
@@ -271,7 +272,7 @@ function renderReviewBody(title, itemType, posterUrl, reviewText) {
   const displayPoster = posterUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='105'%3E%3Crect fill='%23f0f0f0' width='70' height='105'/%3E%3Ctext x='50%' y='50%' font-size='10' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
 
   return `
-    <div class="activity-body review-type">
+    <div class="activity-body review-type" data-review-id="${reviewId}">
       <div class="review-poster">
         <img src="${displayPoster}" alt="${title}" />
       </div>
@@ -299,6 +300,8 @@ function renderGenericBody(title) {
  * Event listener'ları bağla (beğen, yorum, paylaş)
  */
 function bindActivityEvents() {
+  const currentUser = sessionManager.getCurrentUser();
+
   // Beğen butonları
   feedContainer.querySelectorAll(".btn-like").forEach(btn => {
     if (!btn.dataset.listenerAttached) {
@@ -333,45 +336,317 @@ function bindActivityEvents() {
       link.dataset.listenerAttached = "true";
     }
   });
+
+  // Yorumları ve beğenileri otomatik yükle (refresh'de görmek için)
+  feedContainer.querySelectorAll(".activity-card").forEach(card => {
+    if (!card.dataset.dataLoaded) {
+      const activityId = card.getAttribute("data-activity-id");
+      const activityType = card.getAttribute("data-activity-type");
+      
+      if (currentUser) {
+        // Review'lar için yorumları yükle
+        if (activityType === "review") {
+          displayComments(card, activityId, currentUser.id);
+        }
+      }
+      
+      card.dataset.dataLoaded = "true";
+    }
+  });
+}
+
+/**
+ * Like count'u API'den getir ve güncelle
+ */
+async function updateLikeCount(card, id, type) {
+  try {
+    let endpoint = "";
+    if (type === "review") {
+      endpoint = `/likes/review/${id}/likes`;
+    } else if (type === "rating") {
+      endpoint = `/likes/item/${id}/likes`;
+    }
+
+    if (!endpoint) return;
+
+    const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+      headers: {
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      }
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    
+    // Count'u bul - API response formatını handle et
+    let likeCount = 0;
+    if (typeof data === 'object') {
+      if (data.total_likes !== undefined) {
+        likeCount = data.total_likes; // Backend döndürdüğü format
+      } else if (data.count !== undefined) {
+        likeCount = data.count;
+      } else if (Array.isArray(data)) {
+        likeCount = data.length;
+      } else if (data.likes && Array.isArray(data.likes)) {
+        likeCount = data.likes.length;
+      }
+    }
+
+    // UI'da count'u güncelle
+    const likeBtn = card.querySelector(".btn-like");
+    if (likeBtn) {
+      const likeCountEl = likeBtn.querySelector(".like-count");
+      likeCountEl.textContent = likeCount;
+    }
+    
+    console.log(`✅ Like count güncellendi: ${likeCount}`);
+  } catch (error) {
+    console.error("Like count güncelleme hatası:", error);
+  }
 }
 
 /**
  * Beğen butonu tıklandı
  */
-function handleLike(e) {
+async function handleLike(e) {
   e.preventDefault();
   const btn = e.target.closest(".btn-like");
+  const card = btn.closest(".activity-card");
+  const activityId = card.getAttribute("data-activity-id");
+  const activityType = card.getAttribute("data-activity-type");
+  const itemId = card.getAttribute("data-item-id");
   const likeIcon = btn.querySelector(".like-icon");
   const likeCount = btn.querySelector(".like-count");
+  const currentUser = sessionManager.getCurrentUser();
 
-  btn.classList.toggle("active");
+  if (!currentUser) {
+    alert("❌ Beğenmek için giriş yapmalısınız");
+    return;
+  }
 
-  if (btn.classList.contains("active")) {
-    likeIcon.textContent = "❤️";
-    likeCount.textContent = parseInt(likeCount.textContent) + 1;
-  } else {
-    likeIcon.textContent = "🤍";
-    likeCount.textContent = Math.max(0, parseInt(likeCount.textContent) - 1);
+  try {
+    let endpoint = "";
+    if (activityType === "review") {
+      endpoint = `/likes/review/${activityId}/like`;
+    } else if (activityType === "rating") {
+      // Rating beğenmesi (item like olarak)
+      if (!itemId) {
+        console.warn("Item ID bulunamadı");
+        return;
+      }
+      endpoint = `/likes/item/${itemId}/like`;
+    }
+
+    if (!endpoint) {
+      console.warn("Endpoint belirlenemedi");
+      return;
+    }
+
+    // API'ye beğeni isteğini gönder
+    const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      },
+      body: JSON.stringify({ user_id: currentUser.id })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Hatası: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // UI güncelle
+    if (result.action === "liked") {
+      likeIcon.textContent = "❤️";
+      likeCount.textContent = parseInt(likeCount.textContent) + 1;
+      btn.classList.add("active");
+    } else if (result.action === "unliked") {
+      likeIcon.textContent = "🤍";
+      likeCount.textContent = Math.max(0, parseInt(likeCount.textContent) - 1);
+      btn.classList.remove("active");
+    }
+
+    console.log(`✅ Beğeni işlemi: ${result.action}`);
+  } catch (error) {
+    console.error("❌ Beğeni hatası:", error);
+    alert(`❌ Beğeni işlemi başarısız: ${error.message}`);
   }
 }
 
 /**
  * Yorum butonu tıklandı
  */
-function handleComment(e) {
+async function handleComment(e) {
   e.preventDefault();
   const commentText = prompt("💬 Yorum yazınız:");
 
-  if (commentText && commentText.trim()) {
-    const btn = e.target.closest(".btn-comment");
-    const commentCount = btn.querySelector(".comment-count");
-    const commentIcon = btn.querySelector(".comment-icon");
+  if (!commentText || !commentText.trim()) {
+    return;
+  }
 
+  const btn = e.target.closest(".btn-comment");
+  const card = btn.closest(".activity-card");
+  const activityId = card.getAttribute("data-activity-id");
+  const activityType = card.getAttribute("data-activity-type");
+  const commentCount = btn.querySelector(".comment-count");
+  const commentIcon = btn.querySelector(".comment-icon");
+  const currentUser = sessionManager.getCurrentUser();
+
+  if (!currentUser) {
+    alert("❌ Yorum yapmak için giriş yapmalısınız");
+    return;
+  }
+
+  try {
+    let endpoint = "";
+    if (activityType === "review") {
+      endpoint = `/likes/review/${activityId}/comments`;
+    } else {
+      console.warn("Bu aktivite türü yoruma desteklenmiyor");
+      return;
+    }
+
+    // API'ye yorum isteğini gönder
+    const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        comment_text: commentText.trim()
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Hatası: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // UI güncelle
     commentCount.textContent = parseInt(commentCount.textContent) + 1;
     commentIcon.textContent = "💙";
     btn.classList.add("active");
+
+    // Yorumları getir ve göster
+    await displayComments(card, activityId, currentUser.id);
+
+    console.log(`✅ Yorum eklendi: ${result.comment_id}`);
+  } catch (error) {
+    console.error("❌ Yorum hatası:", error);
+    alert(`❌ Yorum ekleme başarısız: ${error.message}`);
   }
 }
+
+/**
+ * Aktivite kartında yorumları göster
+ */
+async function displayComments(card, reviewId, currentUserId) {
+  try {
+    // Mevcut yorumlar bölümünü kaldır
+    const existingCommentsSection = card.querySelector(".comments-section");
+    if (existingCommentsSection) {
+      existingCommentsSection.remove();
+    }
+
+    // API'den yorumları getir
+    const response = await fetch(`http://127.0.0.1:8000/likes/review/${reviewId}/comments`, {
+      headers: {
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      }
+    });
+
+    if (!response.ok) throw new Error("Yorumlar yüklenemedi");
+
+    const data = await response.json();
+    const comments = data.comments || data; // Backend dönem formatını handle et
+
+    // Comment count'u güncelle
+    const commentBtn = card.querySelector(".btn-comment");
+    if (commentBtn) {
+      const commentCount = commentBtn.querySelector(".comment-count");
+      commentCount.textContent = comments.length;
+    }
+
+    if (!comments || comments.length === 0) {
+      return;
+    }
+
+    // Yorumları HTML olarak render et
+    const commentsHtml = comments.map(comment => `
+      <div class="comment-item" data-comment-id="${comment.comment_id}">
+        <div class="comment-header">
+          <div class="comment-user-info">
+            ${comment.avatar_url ? `<img src="${comment.avatar_url}" alt="${comment.username}" class="comment-avatar">` : `<span class="comment-avatar-placeholder">👤</span>`}
+            <div class="comment-user-details">
+              <strong class="comment-username">${comment.username}</strong>
+              <small class="comment-time">${formatRelativeTime(comment.created_at)}</small>
+            </div>
+          </div>
+          ${comment.user_id === currentUserId ? `
+            <button class="btn-delete-comment" onclick="deleteComment(${comment.comment_id}, ${reviewId})" title="Sil">🗑️</button>
+          ` : ""}
+        </div>
+        <p class="comment-text">${comment.comment_text}</p>
+      </div>
+    `).join("");
+
+    // Yorumlar bölümünü footer'ın üstüne ekle
+    const footer = card.querySelector(".activity-footer");
+    const commentsSection = document.createElement("div");
+    commentsSection.className = "comments-section";
+    commentsSection.innerHTML = `
+      <div class="comments-header">💬 Yorumlar (${comments.length})</div>
+      <div class="comments-list">
+        ${commentsHtml}
+      </div>
+    `;
+    footer.parentNode.insertBefore(commentsSection, footer);
+  } catch (error) {
+    console.error("Yorumları gösterme hatası:", error);
+  }
+}
+
+/**
+ * Yorum sil
+ */
+window.deleteComment = async function(commentId, reviewId) {
+  if (!confirm("Yorum silinsin mi?")) return;
+
+  const currentUser = sessionManager.getCurrentUser();
+
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/likes/review-comments/${commentId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      },
+      body: JSON.stringify({ user_id: currentUser.id })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Hatası: ${response.statusText}`);
+    }
+
+    // Yorum öğesini DOM'dan kaldır
+    const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+    if (commentElement) {
+      commentElement.remove();
+    }
+
+    console.log("✅ Yorum silindi");
+  } catch (error) {
+    console.error("❌ Yorum silme hatası:", error);
+    alert(`❌ Yorum silinme başarısız: ${error.message}`);
+  }
+};
 
 /**
  * Paylaş butonu tıklandı

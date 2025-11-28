@@ -67,3 +67,18 @@ def update_user(user_id: int, user_update: schemas.UserUpdate, db: Session = Dep
 
 
 # 5) Avatar resim serve et (static files)
+@router.get("/avatars/{filename}")
+def serve_avatar(filename: str):
+    """Serve avatar images from avatars directory"""
+    from pathlib import Path
+    avatars_dir = Path(__file__).parent.parent.parent / "avatars"
+    file_path = avatars_dir / filename
+    
+    # Security: prevent directory traversal
+    if not str(file_path).startswith(str(avatars_dir)):
+        raise HTTPException(403, "Access denied")
+    
+    if not file_path.exists():
+        raise HTTPException(404, "Avatar not found")
+    
+    return FileResponse(file_path)

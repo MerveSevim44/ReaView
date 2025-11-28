@@ -103,15 +103,25 @@ async function loadProfile() {
     isOwnProfile = currentUserId === profileUserId;
     userBio = user.bio || "";
 
-    // Avatar URL - fallback to placeholder if file:// protocol
+    // Avatar URL - convert file:// to API endpoint or use placeholder
     let avatarUrl = user.avatar_url;
     console.log(`📸 Avatar URL from API: ${avatarUrl}`);
-    console.log(`📸 Starts with file://? ${avatarUrl?.startsWith('file://')}`);
     
-    if (!avatarUrl || avatarUrl.startsWith('file://')) {
-      avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=667eea&color=fff&bold=true`;
-      console.log(`📸 Using fallback: ${avatarUrl}`);
+    if (avatarUrl) {
+      // If file:// protocol, extract filename and use API endpoint
+      if (avatarUrl.startsWith('file://')) {
+        const filename = avatarUrl.split('/').pop();
+        avatarUrl = `${API_BASE}/users/avatars/${filename}`;
+        console.log(`📸 Converted file:// to API endpoint: ${avatarUrl}`);
+      }
     }
+    
+    // Fallback to generated avatar if no URL
+    if (!avatarUrl) {
+      avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=667eea&color=fff&bold=true`;
+      console.log(`📸 Using generated avatar: ${avatarUrl}`);
+    }
+    
     console.log(`📸 Final avatarUrl: ${avatarUrl}`);
 
     profileBox.innerHTML = `

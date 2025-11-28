@@ -107,10 +107,5 @@
 
   <!-- Load Profile Module -->
   <script type="module" src="./js/pages/profile-page.js"></script>
-  <script>
-    fetch('http://127.0.0.1:8000/users/4')
-      .then(r => r.json())
-      .then(u => console.log('Avatar URL from API:', u.avatar_url))
-  </script>
 </body>
 </html>

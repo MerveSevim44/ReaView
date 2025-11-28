@@ -593,7 +593,7 @@
                 ${item.item_id ? `
                   <button class="result-card-btn info detail-db-btn" data-item-id="${item.item_id}">🔍 Detay</button>
                 ` : `
-                  <button class="result-card-btn info detail-api-btn" data-api-index="${idx}">🔍 Detay</button>
+                  <button class="result-card-btn info detail-api-btn" data-item-json="${encodeURIComponent(JSON.stringify(item))}">🔍 Detay</button>
                 `}
               </div>
             </div>
@@ -616,9 +616,10 @@
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const apiIndex = parseInt(btn.getAttribute('data-api-index'));
-          console.log(`🖱️ API Detay Butonu Tıklandı - Index: ${apiIndex}`);
-          goToDetailAPI(apiIndex);
+          const itemJson = btn.getAttribute('data-item-json');
+          const item = JSON.parse(decodeURIComponent(itemJson));
+          console.log(`🖱️ API Detay Butonu Tıklandı - Item: ${item.title}`);
+          goToDetailAPI(item);
         });
       });
     };
@@ -637,27 +638,9 @@
       }
     };
 
-    const goToDetailAPI = (itemIndex) => {
+    const goToDetailAPI = (item) => {
       try {
-        console.log(`📍 API İçeriği Detay İsteniliyor - Index: ${itemIndex}`);
-        
-        // SessionStorage'dan veya global arrayden al
-        let items = currentItems;
-        if (!items || items.length === 0) {
-          const stored = sessionStorage.getItem(ITEMS_STORAGE_KEY);
-          items = stored ? JSON.parse(stored) : [];
-        }
-        
-        console.log(`📊 Mevcut ${items.length} adet API item var`);
-        
-        if (!items || items.length === 0) {
-          throw new Error('Arama sonuçları bulunamadı. Lütfen tekrar arama yapın.');
-        }
-        
-        const item = items[itemIndex];
-        if (!item) {
-          throw new Error(`Item index ${itemIndex} bulunamadı. Toplam ${items.length} öğe var.`);
-        }
+        console.log(`📍 API İçeriği Detay İsteniliyor - Title: ${item.title}`);
         
         // Item türünü kontrol et
         if (!item.title) {

@@ -58,12 +58,26 @@ class User(Base):
 
 
 class Activity(Base):
+    """
+    Genel aktivite tablosu - tüm aktiviteleri track eder
+    
+    Activity Types:
+    - 'review' : Kullanıcı bir review yaptı
+    - 'rating' : Kullanıcı bir item'a puan verdi
+    - 'follow' : Kullanıcı başka birini takip etti
+    - 'like_review' : Kullanıcı bir review'u beğendi
+    - 'like_item' : Kullanıcı bir item'i beğendi
+    - 'comment_review' : Kullanıcı bir review'a yorum yaptı
+    """
     __tablename__ = "activities"
 
     activity_id = Column(Integer, primary_key=True, index=True)
-    activity_type = Column(String(50), nullable=False)
+    activity_type = Column(String(50), nullable=False)  # review, rating, follow, like_review, like_item, comment_review
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     item_id = Column(Integer, ForeignKey("items.item_id"), nullable=True)
+    review_id = Column(Integer, ForeignKey("reviews.review_id", ondelete="CASCADE"), nullable=True)
+    list_id = Column(Integer, ForeignKey("lists.list_id"), nullable=True)
+    related_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)  # For follow activities
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
@@ -73,6 +87,39 @@ class Follow(Base):
     follower_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True, nullable=False)
     followee_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True, nullable=False)
     followed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ReviewLike(Base):
+    """Review'lara yapılan beğeniler"""
+    __tablename__ = "review_likes"
+
+    like_id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("reviews.review_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    liked_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("review_id", "user_id", name="review_likes_review_id_user_id_key"),)
+
+
+class ReviewComment(Base):
+    """Review'lara yapılan yorumlar"""
+    __tablename__ = "review_comments"
+
+    comment_id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("reviews.review_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    comment_text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ItemLike(Base):
+    """Item'lara yapılan beğeniler"""
+    __tablename__ = "item_likes"
+
+    like_id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(Integer, ForeignKey("items.item_id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    liked_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("item_id", "user_id", name="item_likes_item_id_user_id_key"),)
 
 
 class UserLibrary(Base):
