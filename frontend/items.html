@@ -1716,9 +1716,10 @@
         return `
           <div class="comment-item" style="animation: slideInLeft 0.4s ease ${0.1 + idx * 0.05}s both;">
             <div class="comment-header">
-              <div style="flex: 1;">
-                <span class="comment-user">👤 ${author}</span>
-                ${rating ? `<span style="margin-left: 10px; color: #ff9800;">⭐ ${rating}/10</span>` : ''}
+              <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                ${comment.avatar_url ? `<img src="${comment.avatar_url}" alt="${author}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">👤</div>`}
+                <a href="./profile.html?user=${comment.user_id}" style="text-decoration: none; color: #667eea; font-weight: 500; cursor: pointer;" title="Profili ziyaret et">${author}</a>
+                ${rating ? `<span style="margin-left: auto; color: #ff9800;">⭐ ${rating}/10</span>` : ''}
               </div>
               <span class="comment-date">${date ? formatDate(date) : '🌐 API'}</span>
             </div>
@@ -1778,9 +1779,10 @@
         return `
           <div class="rating-item" style="animation: slideInLeft 0.4s ease ${0.1 + idx * 0.05}s both;">
             <div class="rating-item-header">
-              <div style="flex: 1;">
-                <span class="rating-user">👤 ${rating.username || 'Anonim'}</span>
-                <span style="margin-left: 10px; color: #ff9800; font-size: 18px;">${stars} <strong>${rating.score}/10</strong></span>
+              <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                ${rating.avatar_url ? `<img src="${rating.avatar_url}" alt="${rating.username}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` : `<div style="width: 32px; height: 32px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px;">👤</div>`}
+                <a href="./profile.html?user=${rating.user_id}" style="text-decoration: none; color: #667eea; font-weight: 500; cursor: pointer;" title="Profili ziyaret et">${rating.username || 'Anonim'}</a>
+                <span style="margin-left: auto; color: #ff9800; font-size: 18px;">${stars} <strong>${rating.score}/10</strong></span>
               </div>
               <span class="rating-date">${date ? formatDate(date) : ''}</span>
             </div>

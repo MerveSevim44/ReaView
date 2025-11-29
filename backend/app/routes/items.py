@@ -407,7 +407,7 @@ def get_item_comments(item_id: int, db: Session = Depends(get_db)):
         models.Review.item_id == item_id
     ).all()
     
-    # Add username to each review
+    # Add username and avatar to each review
     result = []
     for review in reviews:
         user = db.query(models.User).filter(models.User.user_id == review.user_id).first()
@@ -415,6 +415,7 @@ def get_item_comments(item_id: int, db: Session = Depends(get_db)):
             "review_id": review.review_id,
             "user_id": review.user_id,
             "username": user.username if user else f"User {review.user_id}",
+            "avatar_url": user.avatar_url if user else None,
             "item_id": review.item_id,
             "review_text": review.review_text,
             "rating": review.rating,
@@ -437,7 +438,7 @@ def get_item_ratings(item_id: int, db: Session = Depends(get_db)):
         models.Rating.item_id == item_id
     ).order_by(models.Rating.created_at.desc()).all()
     
-    # Add username to each rating
+    # Add username and avatar to each rating
     result = []
     for rating in ratings:
         user = db.query(models.User).filter(models.User.user_id == rating.user_id).first()
@@ -445,6 +446,7 @@ def get_item_ratings(item_id: int, db: Session = Depends(get_db)):
             "rating_id": rating.rating_id,
             "user_id": rating.user_id,
             "username": user.username if user else f"User {rating.user_id}",
+            "avatar_url": user.avatar_url if user else None,
             "item_id": rating.item_id,
             "score": rating.score,
             "created_at": rating.created_at.isoformat() if rating.created_at else None
@@ -561,6 +563,7 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
                 "review_id": review.review_id,
                 "user_id": review.user_id,
                 "username": user.username if user else f"User {review.user_id}",
+                "avatar_url": user.avatar_url if user else None,
                 "review_text": review.review_text,
                 "rating": review.rating,
                 "created_at": review.created_at.isoformat() if review.created_at else None,
@@ -585,6 +588,7 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
                     "review_id": review.review_id,
                     "user_id": review.user_id,
                     "username": user.username if user else f"User {review.user_id}",
+                    "avatar_url": user.avatar_url if user else None,
                     "review_text": review.review_text,
                     "rating": review.rating,
                     "created_at": review.created_at.isoformat() if review.created_at else None,
@@ -637,7 +641,7 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
 def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Depends(get_db)):
     """
     API items için yorum ekle (TMDB/Google Books)
-    Yorum reviews table'ına source_id ile kaydedilir
+    Yorum reviews table'ına kaydedilir ve item_id olacak (DB'ye otomatik kaydedilir)
     """
     try:
         print(f"📝 API Comment POST: {source_id}, Data: {comment}")
@@ -645,14 +649,40 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
         user_id = comment.get("user_id")
         review_text = comment.get("review_text")
         rating = comment.get("rating")
+        title = comment.get("title", "Unknown")
+        item_type = comment.get("item_type", "movie")
+        poster_url = comment.get("poster_url", "")
+        year = comment.get("year")
+        description = comment.get("description", "")
         
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id gerekli")
         if not review_text:
             raise HTTPException(status_code=400, detail="review_text gerekli")
         
+        # API item'ı DB'ye kaydet (varsa skip et)
+        existing_item = db.query(models.Item).filter(
+            models.Item.external_api_id == source_id
+        ).first()
+        
+        if not existing_item:
+            new_item = models.Item(
+                title=title,
+                item_type=item_type,
+                year=year,
+                description=description,
+                poster_url=poster_url,
+                external_api_id=source_id,
+                external_api_source="external",
+                external_rating=0
+            )
+            db.add(new_item)
+            db.flush()
+            item_id = new_item.item_id
+        else:
+            item_id = existing_item.item_id
+        
         # Find the next available review_id (reuse deleted IDs)
-        # Get all existing IDs
         existing_ids_query = db.query(models.Review.review_id).all()
         existing_ids = {row[0] for row in existing_ids_query}
         
@@ -661,23 +691,24 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
         while next_id in existing_ids:
             next_id += 1
         
-        # Yorum/rating veritabanına kaydet
+        # Review kaydı oluştur
         new_review = models.Review(
             review_id=next_id,
             user_id=user_id,
-            item_id=None,  # API items için item_id NULL
-            source_id=source_id,  # API source ID (tmdb_123 gibi)
+            item_id=item_id,  # ← Artık item_id var!
+            source_id=source_id,  # Referans için tut
             review_text=review_text,
             rating=rating if rating and 1 <= rating <= 10 else None
         )
         
         db.add(new_review)
-        db.flush()  # Get the ID before commit
+        db.flush()
         
-        # Activity kaydı oluştur (API item'ı için item_id NULL olur, sadece review_id set edilir)
+        # Activity kaydı oluştur - item_id ile
         activity = models.Activity(
             user_id=user_id,
             activity_type="review",
+            item_id=item_id,  # ← item_id'yi Activity'ye yaz
             review_id=new_review.review_id
         )
         db.add(activity)
@@ -689,6 +720,7 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
             "message": "Yorum başarıyla eklendi",
             "source_id": source_id,
             "review_id": new_review.review_id,
+            "item_id": item_id,
             "user_id": user_id,
             "rating": rating
         }
@@ -1071,6 +1103,37 @@ def add_to_custom_list(list_id: int, data: dict = Body(...), db: Session = Depen
         if not item_id and not source_id:
             raise HTTPException(status_code=400, detail="item_id veya source_id gerekli")
         
+        # Eğer source_id varsa, API itemini DB'ye kaydet ve item_id al
+        if source_id and not item_id:
+            # Check if API item already exists
+            existing_item = db.query(models.Item).filter(
+                models.Item.external_api_id == source_id
+            ).first()
+            
+            if not existing_item:
+                # API item metadata'sını al ve DB'ye kaydet
+                title = data.get("title", "Unknown")
+                item_type = data.get("item_type", "movie")
+                poster_url = data.get("poster_url", "")
+                year = data.get("year")
+                description = data.get("description", "")
+                
+                new_item = models.Item(
+                    title=title,
+                    item_type=item_type,
+                    year=year,
+                    description=description,
+                    poster_url=poster_url,
+                    external_api_id=source_id,
+                    external_api_source="external",
+                    external_rating=0
+                )
+                db.add(new_item)
+                db.flush()
+                item_id = new_item.item_id
+            else:
+                item_id = existing_item.item_id
+        
         # DB item ise kontrol et
         if item_id:
             item = db.query(models.Item).filter(models.Item.item_id == item_id).first()
@@ -1079,16 +1142,10 @@ def add_to_custom_list(list_id: int, data: dict = Body(...), db: Session = Depen
         
         if action == "add":
             # Duplicate kontrol
-            if item_id:
-                existing = db.query(models.ListItem).filter(
-                    models.ListItem.list_id == list_id,
-                    models.ListItem.item_id == item_id
-                ).first()
-            else:
-                existing = db.query(models.ListItem).filter(
-                    models.ListItem.list_id == list_id,
-                    models.ListItem.source_id == source_id
-                ).first()
+            existing = db.query(models.ListItem).filter(
+                models.ListItem.list_id == list_id,
+                models.ListItem.item_id == item_id
+            ).first()
             
             if existing:
                 return {
@@ -1103,7 +1160,6 @@ def add_to_custom_list(list_id: int, data: dict = Body(...), db: Session = Depen
             list_item = models.ListItem(
                 list_id=list_id,
                 item_id=item_id,
-                source_id=source_id,
                 position=position
             )
             db.add(list_item)
@@ -1120,16 +1176,10 @@ def add_to_custom_list(list_id: int, data: dict = Body(...), db: Session = Depen
             db.commit()
         
         elif action == "remove":
-            if item_id:
-                db.query(models.ListItem).filter(
-                    models.ListItem.list_id == list_id,
-                    models.ListItem.item_id == item_id
-                ).delete()
-            else:
-                db.query(models.ListItem).filter(
-                    models.ListItem.list_id == list_id,
-                    models.ListItem.source_id == source_id
-                ).delete()
+            db.query(models.ListItem).filter(
+                models.ListItem.list_id == list_id,
+                models.ListItem.item_id == item_id
+            ).delete()
             db.commit()
         
         return {

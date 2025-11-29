@@ -630,19 +630,95 @@ function setupLibraryTabs() {
 function setupEditProfileButton() {
   const editProfileBtn = document.getElementById("editProfileBtn");
   const token = sessionManager.getToken();
-  console.log(`🔍 Edit button setup: isOwnProfile=${isOwnProfile}, token=${token ? "✅" : "❌ null"}, button=${editProfileBtn ? "✅" : "❌ null"}`);
   
-  if (editProfileBtn && isOwnProfile && token) {
-    editProfileBtn.addEventListener("click", async () => {
-      console.log("✏️ Profili düzenle tıklandı");
-      
-      const newBio = prompt("Biyografını güncelle:", userBio || "");
-      
-      if (newBio === null) return; // Kullanıcı iptal etti
-      
+  // Verify all modal elements exist
+  const editProfileModal = document.getElementById("editProfileModal");
+  const closeEditModal = document.getElementById("closeEditModal");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const saveEditBtn = document.getElementById("saveEditBtn");
+  const bioTextarea = document.getElementById("bioTextarea");
+  const bioCharCount = document.getElementById("bioCharCount");
+  const avatarOptions = document.querySelectorAll(".avatar-option");
+  const selectedAvatarColor = document.getElementById("selectedAvatarColor");
+
+  console.log(`🔍 Edit button setup:`, {
+    isOwnProfile,
+    token: token ? "✅" : "❌",
+    editProfileBtn: editProfileBtn ? "✅" : "❌",
+    editProfileModal: editProfileModal ? "✅" : "❌",
+    bioTextarea: bioTextarea ? "✅" : "❌",
+    avatarOptions: avatarOptions.length
+  });
+  
+  if (!editProfileBtn || !isOwnProfile || !token) {
+    console.log("⚠️ Edit button setup skipped - missing requirements");
+    return;
+  }
+
+  if (!editProfileModal || !bioTextarea || avatarOptions.length === 0) {
+    console.error("❌ Modal elements not found in DOM");
+    return;
+  }
+
+  // Open modal when edit button clicked
+  editProfileBtn.addEventListener("click", () => {
+    console.log("✏️ Profili düzenle modal açılıyor");
+    
+    // Reset form
+    bioTextarea.value = userBio || "";
+    bioCharCount.textContent = (userBio || "").length;
+    selectedAvatarColor.value = "images1"; // Default avatar
+    
+    // Reset avatar selection
+    avatarOptions.forEach(opt => opt.classList.remove("selected"));
+    if (avatarOptions[0]) avatarOptions[0].classList.add("selected");
+    
+    // Show modal
+    editProfileModal.style.display = "flex";
+  });
+
+  // Update character count
+  bioTextarea.addEventListener("input", () => {
+    bioCharCount.textContent = bioTextarea.value.length;
+  });
+
+  // Avatar picker
+  avatarOptions.forEach(option => {
+    option.addEventListener("click", () => {
+      avatarOptions.forEach(opt => opt.classList.remove("selected"));
+      option.classList.add("selected");
+      selectedAvatarColor.value = option.dataset.avatar;
+      console.log(`🎨 Avatar seçildi: ${option.dataset.avatar}`);
+    });
+  });
+
+  // Close modal buttons
+  const closeModal = () => {
+    editProfileModal.style.display = "none";
+  };
+
+  if (closeEditModal) closeEditModal.addEventListener("click", closeModal);
+  if (cancelEditBtn) cancelEditBtn.addEventListener("click", closeModal);
+
+  // Close modal when clicking outside
+  editProfileModal.addEventListener("click", (e) => {
+    if (e.target === editProfileModal) {
+      closeModal();
+    }
+  });
+
+  // Save profile
+  if (saveEditBtn) {
+    saveEditBtn.addEventListener("click", async () => {
+      const newBio = bioTextarea.value.trim();
+      const avatarName = selectedAvatarColor.value;
+      const avatarUrl = `./avatars/${avatarName}.jpg`;
+
+      console.log(`💾 Profil kaydediliyor:`, { bio: newBio, avatar: avatarUrl });
+
+      saveEditBtn.disabled = true;
       try {
         const url = `${API_BASE}/users/${currentUserId}`;
-        console.log(`📡 Profil güncelleniyor: ${url}`, { bio: newBio });
         
         const response = await fetch(url, {
           method: "PUT",
@@ -650,13 +726,16 @@ function setupEditProfileButton() {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${sessionManager.getToken()}`
           },
-          body: JSON.stringify({ bio: newBio })
+          body: JSON.stringify({ 
+            bio: newBio,
+            avatar_url: avatarUrl
+          })
         });
         
         if (!response.ok) {
           const errorData = await response.json();
           console.error(`❌ Profil güncelleme hatası: ${response.status}`, errorData);
-          alert("❌ Profil güncellenirken hata oluştu!");
+          showErrorToast("❌ Profil güncellenirken hata oluştu!");
           return;
         }
         
@@ -664,7 +743,8 @@ function setupEditProfileButton() {
         console.log("✅ Profil başarıyla güncellendi!", updatedUser);
         
         userBio = updatedUser.bio;
-        showSuccess("✅ Biyografi başarıyla güncellendi!");
+        showSuccess("✅ Profil başarıyla güncellendi!");
+        closeModal();
         
         // UI'ı güncellemek için profili yeniden yükle
         setTimeout(() => {
@@ -672,11 +752,11 @@ function setupEditProfileButton() {
         }, 500);
       } catch (error) {
         console.error(`❌ Profil güncelleme isteği başarısız:`, error.message);
-        alert("❌ Profil güncellenirken hata oluştu!");
+        showErrorToast("❌ Profil güncellenirken hata oluştu!");
+      } finally {
+        saveEditBtn.disabled = false;
       }
     });
-  } else if (!token) {
-    console.log("⚠️ Token bulunamadı - Profili düzenle butonu devre dışı");
   }
 }
 

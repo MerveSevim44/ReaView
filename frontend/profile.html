@@ -102,6 +102,77 @@
     </section>
   </div>
 
+  <!-- Profile Edit Modal -->
+  <div id="editProfileModal" class="modal" style="display: none;">
+    <div class="modal-content edit-modal-content">
+      <div class="modal-header">
+        <h3>👤 Profili Düzenle</h3>
+        <button id="closeEditModal" class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Avatar Picker Grid -->
+        <div class="avatar-picker-section">
+          <label style="font-weight: 600; margin-bottom: 12px; display: block;">Avatar Seç</label>
+          <div class="avatar-picker-grid">
+            <!-- 10 Avatar Options with Images -->
+            <div class="avatar-option" data-avatar="images1" style="cursor: pointer;" title="Avatar 1">
+              <img src="./avatars/images1.jpg" alt="Avatar 1" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images2" style="cursor: pointer;" title="Avatar 2">
+              <img src="./avatars/images2.jpg" alt="Avatar 2" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images3" style="cursor: pointer;" title="Avatar 3">
+              <img src="./avatars/images3.jpg" alt="Avatar 3" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images4" style="cursor: pointer;" title="Avatar 4">
+              <img src="./avatars/images4.jpg" alt="Avatar 4" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images5" style="cursor: pointer;" title="Avatar 5">
+              <img src="./avatars/images5.jpg" alt="Avatar 5" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images6" style="cursor: pointer;" title="Avatar 6">
+              <img src="./avatars/images6.jpg" alt="Avatar 6" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images7" style="cursor: pointer;" title="Avatar 7">
+              <img src="./avatars/images7.jpg" alt="Avatar 7" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images8" style="cursor: pointer;" title="Avatar 8">
+              <img src="./avatars/images8.jpg" alt="Avatar 8" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images9" style="cursor: pointer;" title="Avatar 9">
+              <img src="./avatars/images9.jpg" alt="Avatar 9" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+            <div class="avatar-option" data-avatar="images10" style="cursor: pointer;" title="Avatar 10">
+              <img src="./avatars/images10.jpg" alt="Avatar 10" class="avatar-img" onerror="this.style.display='none'">
+            </div>
+          </div>
+          <input type="hidden" id="selectedAvatarColor" value="">
+        </div>
+
+        <!-- Bio Textarea -->
+        <div class="bio-section" style="margin-top: 20px;">
+          <label for="bioTextarea" style="font-weight: 600; margin-bottom: 8px; display: block;">Biyografi</label>
+          <textarea 
+            id="bioTextarea" 
+            class="bio-textarea" 
+            placeholder="Biyografını yaz... (maksimum 500 karakter)"
+            maxlength="500"
+            rows="4"
+          ></textarea>
+          <div style="text-align: right; font-size: 12px; color: #999; margin-top: 4px;">
+            <span id="bioCharCount">0</span>/500
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancelEditBtn" class="btn-secondary">İptal</button>
+        <button id="saveEditBtn" class="btn-primary">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Load Navbar Module -->
   <script type="module" src="./js/components/navbar.js"></script>
 

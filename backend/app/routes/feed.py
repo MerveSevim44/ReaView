@@ -34,9 +34,15 @@ def get_feed(
             COALESCE(i.item_type, '') AS item_type,
             COALESCE(i.poster_url, '') AS poster_url,
             COALESCE(i.year, 0) AS year,
+            COALESCE(i.description, '') AS description,
             -- Review details (review ise)
             COALESCE(r.review_text, '') AS review_text,
-            COALESCE(r.rating, 0) AS rating_score,
+            COALESCE(r.rating, 0) AS review_rating,
+            -- Rating details (rating ise) - ratings tablosundan direct
+            CASE 
+                WHEN a.activity_type = 'rating' THEN COALESCE(rat.score, 0)
+                ELSE 0
+            END AS rating_score,
             -- Beğeni sayısı
             COALESCE((SELECT COUNT(*) FROM review_likes WHERE review_id = a.review_id), 0) AS like_count,
             -- Yorum sayısı
@@ -45,6 +51,7 @@ def get_feed(
         JOIN users u ON u.user_id = a.user_id
         LEFT JOIN items i ON i.item_id = a.item_id
         LEFT JOIN reviews r ON r.review_id = a.review_id
+        LEFT JOIN ratings rat ON rat.user_id = a.user_id AND rat.item_id = a.item_id
         WHERE a.user_id IN (
             SELECT followee_id FROM follows WHERE follower_id = :uid
         )

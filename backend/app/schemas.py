@@ -58,6 +58,7 @@ class ReviewOut(BaseModel):
 	rating: Optional[int] = None
 	created_at: Optional[datetime] = None
 	username: Optional[str] = None
+	avatar_url: Optional[str] = None
 
 	model_config = {"from_attributes": True}
 

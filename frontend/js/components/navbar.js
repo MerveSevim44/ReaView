@@ -18,17 +18,16 @@ export function initializeNavbar() {
 
     <div class="navbar-center">
       <ul class="navbar-nav">
-        <li><a href="./feed.html" class="nav-link">Akış</a></li>
-        <li><a href="./explore.html" class="nav-link">Keşfet</a></li>
-        <li><a href="./items.html" class="nav-link">İçerikler</a></li>
+        <li><a href="./feed.html" class="nav-link">📰 Akış</a></li>
+        <li><a href="./explore.html" class="nav-link">🔍 Keşfet</a></li>
       </ul>
     </div>
 
     <div class="navbar-user">
       <!-- Show when not logged in -->
       <div class="auth-buttons" id="authButtons">
-        <a href="./login.html" class="btn-login">Giriş Yap</a>
-        <a href="./login.html" class="btn-register">Kayıt Ol</a>
+        <a href="./login.html" class="btn-login">🔐 Giriş Yap</a>
+        <a href="./login.html" class="btn-register">✍️ Kayıt Ol</a>
       </div>
 
       <!-- Show when logged in -->
