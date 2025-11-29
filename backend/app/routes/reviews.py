@@ -59,11 +59,11 @@ def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
     db.add(new_review)
     db.flush()  # Get the ID before commit
     
-    # Activity kaydı oluştur
+    # Activity kaydı oluştur - item_id'yi review'dan al
     activity = models.Activity(
         user_id=review.user_id,
         activity_type="review",
-        item_id=review.item_id,
+        item_id=review.item_id,  # ← Review'daki item_id'yi kullan
         review_id=new_review.review_id
     )
     db.add(activity)
