@@ -11,6 +11,12 @@ import { getUserInitials } from "../utils/formatters.js";
  * Initialize navbar
  */
 export function initializeNavbar() {
+  // Don't show navbar on login and register pages
+  const currentPage = window.location.pathname.split("/").pop() || "";
+  if (currentPage === "login.html" || currentPage === "register.html") {
+    return;
+  }
+
   const navbarContent = `
     <a href="./feed.html" class="navbar-brand">
       📚 BiblioNet

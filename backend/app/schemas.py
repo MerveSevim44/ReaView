@@ -140,3 +140,16 @@ class UserWithFollowInfo(UserOut):
 
 	model_config = {"from_attributes": True}
 
+
+# ============== PASSWORD RESET SCHEMAS ==============
+
+class ForgotPasswordRequest(BaseModel):
+	"""Şifre sıfırlama isteği"""
+	email: str
+
+
+class ResetPasswordRequest(BaseModel):
+	"""Şifre sıfırlama"""
+	email: str
+	token: str
+	new_password: str

@@ -4,7 +4,6 @@
 
 import {
   getUser,
-  getUserReviews,
   getUserActivities,
   getFollowing,
   getFollowers,
@@ -34,7 +33,6 @@ const profileUserId = Number(getQueryParam("user") || getQueryParam("id")) || cu
 const followBtn = document.getElementById("mainFollowBtn");
 const profileBox = document.getElementById("profileBox");
 const activitiesMount = document.getElementById("activities");
-const reviewsMount = document.getElementById("reviews");
 const followListMount = document.getElementById("followList");
 const libraryContent = document.getElementById("libraryContent");
 const customLists = document.getElementById("customLists");
@@ -76,7 +74,6 @@ async function initializePage() {
     await Promise.all([
       loadProfile(),
       loadActivities(),
-      loadReviews(),
       loadFollowingStatus(),
       loadLibrary(),
       loadCustomLists()
@@ -135,7 +132,6 @@ async function loadProfile() {
       </div>
       <h2>@${user.username}</h2>
       <p class="muted">${user.email}</p>
-      ${isOwnProfile ? `<span class="profile-badge">🔵 Bu senin profilin</span>` : ""}
       ${user.bio ? `<p class="bio" id="profileBio">${user.bio}</p>` : `<p class="muted bio" id="profileBio">Biyografi yok.</p>`}
       <p class="muted" style="margin-top: 16px;">
         📅 Katıldı: ${formatDate(user.created_at)}
@@ -193,40 +189,6 @@ function renderActivity(activity) {
       </div>
       <div class="muted" style="margin-top: 8px;">
         ${formatDateTime(activity.created_at)}
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Load and display reviews
- */
-async function loadReviews() {
-  try {
-    const revs = await getUserReviews(profileUserId);
-
-    if (!revs || revs.length === 0) {
-      Loader.showEmpty(reviewsMount, "Henüz yorum yok.");
-      return;
-    }
-
-    reviewsMount.innerHTML = revs
-      .map(review => renderReview(review))
-      .join("");
-  } catch (error) {
-    Loader.showError(reviewsMount, `Yorumlar alınamadı: ${error.message}`);
-  }
-}
-
-/**
- * Render review item
- */
-function renderReview(review) {
-  return `
-    <div class="review-item">
-      <div>${review.review_text}</div>
-      <div class="muted" style="margin-top: 8px;">
-        ${formatDateTime(review.created_at)}
       </div>
     </div>
   `;

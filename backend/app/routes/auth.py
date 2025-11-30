@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..database import get_db
 from .. import models, schemas
+from ..services.email_service import send_password_reset_email
 from datetime import datetime
 import hashlib
 import secrets
+import os
 
 router = APIRouter()
 
@@ -156,93 +158,76 @@ def logout():
 # ============== PASSWORD RESET ==============
 
 @router.post("/forgot-password")
-def forgot_password(email: str = Body(...), db: Session = Depends(get_db)):
-    """Şifre sıfırlama isteği - e-posta gönder"""
+def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Kullanıcı e-posta ile şifre sıfırlama linki al"""
     try:
-        user = db.query(models.User).filter(models.User.email == email).first()
-        if not user:
-            # Don't reveal if email exists (security best practice)
-            print(f"⚠️ Password reset request for non-existent email: {email}")
-            return {"message": "E-posta adresiniz kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir"}
+        email = request.email.strip()
         
-        # Generate reset token
+        # E-postayı users tablosundan ara (case-insensitive)
+        user = db.query(models.User).filter(
+            models.User.email.ilike(email)
+        ).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Bu e-posta kaydı sistemde bulunamadı")
+        
+        # Token oluştur
         reset_token = secrets.token_urlsafe(32)
         
-        # Set token to expire in 1 hour
-        from datetime import timedelta
-        expires_at = datetime.utcnow() + timedelta(hours=1)
+        # Reset linki oluştur
+        frontend_url = os.getenv("FRONTEND_URL", "http://127.0.0.1:8080")
+
+        reset_link = f"{frontend_url}/reset-password.html?token={reset_token}&email={user.email}"
+
+
         
-        # Delete any existing tokens for this user
-        db.query(models.PasswordResetToken).filter(
-            models.PasswordResetToken.user_id == user.user_id,
-            models.PasswordResetToken.used_at.is_(None)
-        ).delete()
+        # E-posta gönder
+        send_password_reset_email(user.email, reset_link)
         
-        # Create new token
-        token_record = models.PasswordResetToken(
-            user_id=user.user_id,
-            token=reset_token,
-            expires_at=expires_at
-        )
-        db.add(token_record)
-        db.commit()
-        
-        # TODO: Send email with reset link
-        reset_link = f"http://localhost:3000/reset-password.html?token={reset_token}"
-        print(f"🔗 Password reset link for {email}: {reset_link}")
-        
-        # For development, return the link in response (REMOVE IN PRODUCTION)
         return {
-            "message": "E-posta adresiniz kayıtlıysa, şifre sıfırlama bağlantısı gönderilecektir",
-            "reset_link": reset_link  # REMOVE IN PRODUCTION - only for testing
+            "message": "Şifre sıfırlama linki e-posta adresinize gönderildi"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Forgot password error: {str(e)}")
         raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
 @router.post("/reset-password")
-def reset_password(
-    token: str = Body(...),
-    new_password: str = Body(...),
-    db: Session = Depends(get_db)
-):
-    """Şifremi sıfırla"""
+def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Yeni şifre belirle"""
     try:
-        # Validate password
-        if len(new_password) < 8:
-            raise HTTPException(status_code=400, detail="Şifre en az 8 karakter olmalı")
+        email = request.email.strip()
+        token = request.token.strip()
+        new_password = request.new_password
         
-        if not any(c.isupper() for c in new_password):
-            raise HTTPException(status_code=400, detail="Şifre en az bir büyük harf içermelidir")
+        # Şifre uzunluğu kontrol et
+        if len(new_password) < 6:
+            raise HTTPException(status_code=400, detail="Şifre en az 6 karakter olmalı")
         
-        if not any(c.isdigit() for c in new_password):
-            raise HTTPException(status_code=400, detail="Şifre en az bir sayı içermelidir")
-        
-        # Find token
-        token_record = db.query(models.PasswordResetToken).filter(
-            models.PasswordResetToken.token == token
-        ).first()
-        
-        if not token_record:
-            raise HTTPException(status_code=400, detail="Geçersiz veya süresi dolmuş bağlantı")
-        
-        # Check if token has expired
-        if datetime.utcnow() > token_record.expires_at:
-            raise HTTPException(status_code=400, detail="Bağlantının süresi dolmuş")
-        
-        # Check if token already used
-        if token_record.used_at:
-            raise HTTPException(status_code=400, detail="Bu bağlantı zaten kullanılmış")
-        
-        # Get user
+        # E-postayı users tablosundan ara (case-insensitive)
         user = db.query(models.User).filter(
-            models.User.user_id == token_record.user_id
+            models.User.email.ilike(email)
         ).first()
         
         if not user:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
         
+        # Şifreyi hash'le ve güncelle
+        user.password_hash = hash_password(new_password)
+        db.commit()
+        
+        print(f"✅ Şifre sıfırlama başarılı: {email}")
+        
+        return {
+            "message": "Şifre başarıyla güncellendi"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Reset password error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
         # Update password
         user.password_hash = hash_password(new_password)
         

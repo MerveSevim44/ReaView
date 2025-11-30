@@ -65,11 +65,27 @@ body {
 }
 
 .auth-form h2 {
-  font-size: 22px;
+  font-size: 24px;
   color: #333;
-  margin-bottom: 25px;
+  margin-bottom: 28px;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.auth-form h3 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.form-description {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 24px;
+  line-height: 1.5;
 }
 
 /* Form Group */
@@ -183,25 +199,17 @@ body {
 }
 
 .message.loading {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #bbdefb;
-  display: flex;
+  display: none !important;
+  background-color: transparent;
+  color: transparent;
+  border: none;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  padding: 0;
+  margin: 0;
 }
 
-/* Spinner */
-.spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(25, 118, 210, 0.2);
-  border-top-color: #1976d2;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
 
 @keyframes spin {
   to {
@@ -214,7 +222,6 @@ body {
   text-align: center;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
 }
 
 .form-footer p {

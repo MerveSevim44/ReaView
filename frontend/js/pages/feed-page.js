@@ -188,7 +188,7 @@ function renderActivityCard(activity) {
     bodyHtml = renderRatingBody(title, item_type, poster_url, year, rating_score, item_id);
   } else if (activity_type === "review" && item_id) {
     // Review aktivitesi - review_text ve review_rating'i birlikte göster
-    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, activity_id);
+    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, activity_id, item_id);
   } else {
     bodyHtml = renderGenericBody(title);
   }
@@ -263,7 +263,7 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore, itemId)
  * Review aktivitesi body'si
  * Gösterim: Poster + Excerpt (ilk 150-200 char) + Rating varsa yıldız + "daha fazlasını oku" linki
  */
-function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, reviewId) {
+function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, reviewId, itemId) {
   // Review metni truncate et (150 karakter)
   const maxExcerptLength = 150;
   const excerpt = reviewText && reviewText.length > maxExcerptLength 
@@ -281,6 +281,9 @@ function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, 
     ratingHtml = `<div style="font-size: 14px; color: #ffc107; margin: 4px 0;">${starDisplay} <span style="color: #666; font-size: 12px;">${reviewRating}/10</span></div>`;
   }
 
+  // Detay sayfasına link oluştur
+  const detailLink = itemId ? `./items.html?id=${itemId}` : "#";
+
   return `
     <div class="activity-body review-type" data-review-id="${reviewId}">
       <div class="review-poster">
@@ -290,7 +293,7 @@ function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, 
         <h4>${title || "Bilinmeyen Başlık"}</h4>
         ${ratingHtml}
         <p class="review-excerpt">"${excerpt}"</p>
-        <a href="#" class="review-read-more">...daha fazlasını oku</a>
+        <a href="${detailLink}" class="review-read-more">...daha fazlasını oku</a>
       </div>
     </div>
   `;
