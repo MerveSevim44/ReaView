@@ -12,14 +12,11 @@ ALTER TABLE lists ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_
 CREATE INDEX IF NOT EXISTS idx_lists_user_id ON lists(user_id);
 CREATE INDEX IF NOT EXISTS idx_lists_is_public ON lists(is_public);
 
--- lists_item tablosunu kontrol et
-CREATE TABLE IF NOT EXISTS lists_item (
-    list_item_id SERIAL PRIMARY KEY,
-    list_id INTEGER NOT NULL REFERENCES lists(list_id) ON DELETE CASCADE,
-    item_id INTEGER NOT NULL REFERENCES items(item_id) ON DELETE CASCADE,
-    position INTEGER DEFAULT 0,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- lists_item tablosunun sütunlarını kontrol et (tablo 008'de oluşturuldu)
+ALTER TABLE lists_item ADD COLUMN IF NOT EXISTS list_id INTEGER NOT NULL REFERENCES lists(list_id) ON DELETE CASCADE;
+ALTER TABLE lists_item ADD COLUMN IF NOT EXISTS item_id INTEGER NOT NULL REFERENCES items(item_id) ON DELETE CASCADE;
+ALTER TABLE lists_item ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;
+ALTER TABLE lists_item ADD COLUMN IF NOT EXISTS added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- Index'leri oluştur
 CREATE INDEX IF NOT EXISTS idx_lists_item_list_id ON lists_item(list_id);
