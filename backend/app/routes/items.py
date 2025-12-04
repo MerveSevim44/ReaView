@@ -427,9 +427,9 @@ def get_item_comments(item_id: int, db: Session = Depends(get_db)):
 
 
 # ⭐ İçeriğin tüm puanlarını getir
-@router.get("/{item_id}/ratings")
+@router.get("/{item_id}/ratings", response_model=list[schemas.RatingOut])
 def get_item_ratings(item_id: int, db: Session = Depends(get_db)):
-    """İçeriğin tüm puanlarını getir"""
+    """İçeriğin tüm puanlarını getir (ratings tablosundan)"""
     item = db.query(models.Item).filter(models.Item.item_id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="İçerik bulunamadı")
@@ -449,7 +449,7 @@ def get_item_ratings(item_id: int, db: Session = Depends(get_db)):
             "avatar_url": user.avatar_url if user else None,
             "item_id": rating.item_id,
             "score": rating.score,
-            "created_at": rating.created_at.isoformat() if rating.created_at else None
+            "created_at": rating.created_at
         }
         result.append(rating_dict)
     
@@ -1221,6 +1221,18 @@ def add_api_item_to_library(source_id: str, data: dict = Body(...), db: Session 
         if not user_id or not status or not source_id:
             raise HTTPException(status_code=400, detail="user_id, status ve source_id gerekli")
         
+        # Ensure title is not empty - if empty, try to fetch from TMDB/API
+        if not title or title.strip() == "":
+            # Try to get from existing item or fetch from external API
+            existing_item_check = db.query(models.Item).filter(
+                models.Item.external_api_id == source_id
+            ).first()
+            if existing_item_check and existing_item_check.title:
+                title = existing_item_check.title
+            else:
+                # Fallback: If still empty, set to Unknown with source_id
+                title = f"Unknown ({source_id})"
+        
         # Status validation
         valid_statuses = ['read', 'toread', 'watched', 'towatch']
         if status not in valid_statuses:
@@ -1231,6 +1243,10 @@ def add_api_item_to_library(source_id: str, data: dict = Body(...), db: Session 
             existing_item = db.query(models.Item).filter(
                 models.Item.external_api_id == source_id
             ).first()
+            
+            # Ensure title is not empty
+            if not title or title.strip() == "":
+                title = "Unknown"
             
             # If not exists, create it automatically
             if not existing_item:

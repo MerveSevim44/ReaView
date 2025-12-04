@@ -68,6 +68,19 @@ class ReviewUpdate(BaseModel):
 	rating: Optional[int] = None
 
 
+class RatingOut(BaseModel):
+	"""Ratings tablosundan çekilen puanlar"""
+	rating_id: int
+	user_id: int
+	item_id: int
+	score: int  # 1-10 puan
+	created_at: Optional[datetime] = None
+	username: Optional[str] = None
+	avatar_url: Optional[str] = None
+
+	model_config = {"from_attributes": True}
+
+
 class UserOut(BaseModel):
 	user_id: int
 	username: str

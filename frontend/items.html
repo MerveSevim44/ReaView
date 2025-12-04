@@ -1129,11 +1129,11 @@
 
               <div class="rating-box">
                 <div class="rating-display">
-                  <div class="rating-big">${rating.toFixed(1)}</div>
+                  <div class="rating-big" id="platformRatingDisplay">${rating.toFixed(1)}</div>
                   <div class="rating-info">
                     <div class="rating-text">Platform Puanı</div>
-                    <div class="rating-text">${item.review_count || 0} Oy</div>
-                    <div class="rating-stars">${stars}</div>
+                    <div class="rating-text" id="ratingCountDisplay">${item.review_count || 0} Oy</div>
+                    <div class="rating-stars" id="platformStarsDisplay">${stars}</div>
                   </div>
                 </div>
 
@@ -1549,7 +1549,13 @@
           body: JSON.stringify({
             item_id: itemIdToAdd,
             source_id: sourceIdToAdd,
-            action: 'add'
+            action: 'add',
+            // API items için metadata ekle
+            title: currentItem.title,
+            item_type: currentItem.item_type || currentItem.type || 'movie',
+            poster_url: currentItem.poster_url || currentItem.posterUrl || currentItem.poster_path,
+            year: currentItem.year || currentItem.releaseDate?.split('-')[0] || currentItem.publishedDate?.split('-')[0],
+            description: currentItem.description || currentItem.overview || ''
           })
         });
         
@@ -1756,10 +1762,40 @@
         console.log(`✅ Puanlar (${currentItem.item_id}): ${ratings.length} bulundu`, ratings);
         
         renderRatings(ratings);
+        updatePlatformRating(ratings);  // Platform Puanı kısmını güncelle
       } catch (error) {
         console.error('❌ Puanlar Yüklenirken Hata:', error);
         renderRatings([]);
       }
+    }
+
+    function updatePlatformRating(ratings) {
+      // Platform Puanı'nı ratings tablosundan hesapla ve güncelle
+      if (!ratings || !ratings.length) {
+        console.log('⚠️ Henüz puan yok');
+        return;
+      }
+
+      // Ortalama puanı hesapla
+      const totalScore = ratings.reduce((sum, r) => sum + r.score, 0);
+      const averageScore = totalScore / ratings.length;
+      
+      // Yıldız sayısını hesapla (5 üzeri)
+      const fullStars = Math.floor(averageScore / 2);
+      const hasHalfStar = (averageScore % 2) !== 0;
+      let starsDisplay = '⭐'.repeat(fullStars);
+      if (hasHalfStar) starsDisplay += '✨';
+      
+      console.log(`📊 Platform Puanı Güncellendi: ${averageScore.toFixed(1)}/10, Oy: ${ratings.length}`);
+      
+      // HTML'i güncelle
+      const ratingDisplay = document.getElementById('platformRatingDisplay');
+      const countDisplay = document.getElementById('ratingCountDisplay');
+      const starsDisplayDiv = document.getElementById('platformStarsDisplay');
+      
+      if (ratingDisplay) ratingDisplay.textContent = averageScore.toFixed(1);
+      if (countDisplay) countDisplay.textContent = `${ratings.length} Oy`;
+      if (starsDisplayDiv) starsDisplayDiv.textContent = starsDisplay;
     }
 
     function renderRatings(ratings) {
@@ -1861,7 +1897,13 @@
             body: JSON.stringify({
               user_id: currentUser.user_id,
               review_text: text,
-              rating: selectedRating || null
+              rating: selectedRating || null,
+              // API item metadata ekle
+              title: currentItem.title,
+              item_type: currentItem.item_type || currentItem.type || 'movie',
+              poster_url: currentItem.poster_url || currentItem.posterUrl || currentItem.poster_path,
+              year: currentItem.year || currentItem.releaseDate?.split('-')[0] || currentItem.publishedDate?.split('-')[0],
+              description: currentItem.description || currentItem.overview || ''
             })
           });
 
