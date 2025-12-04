@@ -442,16 +442,17 @@ def get_item_ratings(item_id: int, db: Session = Depends(get_db)):
     result = []
     for rating in ratings:
         user = db.query(models.User).filter(models.User.user_id == rating.user_id).first()
-        rating_dict = {
-            "rating_id": rating.rating_id,
-            "user_id": rating.user_id,
-            "username": user.username if user else f"User {rating.user_id}",
-            "avatar_url": user.avatar_url if user else None,
-            "item_id": rating.item_id,
-            "score": rating.score,
-            "created_at": rating.created_at
-        }
-        result.append(rating_dict)
+        result.append(
+            schemas.RatingOut(
+                rating_id=rating.rating_id,
+                user_id=rating.user_id,
+                username=user.username if user else f"User {rating.user_id}",
+                avatar_url=user.avatar_url if user else None,
+                item_id=rating.item_id,
+                score=rating.score,
+                created_at=rating.created_at
+            )
+        )
     
     return result
 
