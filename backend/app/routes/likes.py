@@ -103,7 +103,8 @@ def get_review_likes(review_id: int, db: Session = Depends(get_db)):
                 "like_id": like.like_id,
                 "user_id": like.user_id,
                 "username": user.username if user else f"User {like.user_id}",
-                "created_at": like.created_at
+                "avatar_url": user.avatar_url if user else None,
+                "liked_at": like.liked_at
             })
         
         return {
@@ -351,21 +352,35 @@ def like_item(item_id: int, data: dict = Body(...), db: Session = Depends(get_db
 @router.get("/item/{item_id}/likes")
 def get_item_likes(item_id: int, db: Session = Depends(get_db)):
     """
-    Bir item'ın kaç beğenisi var
+    Bir item'ı kaç kişi beğenmişi ve kim beğenmişi göster
     """
     try:
         item = db.query(models.Item).filter(models.Item.item_id == item_id).first()
         if not item:
             raise HTTPException(status_code=404, detail="İçerik bulunamadı")
         
-        like_count = db.query(models.ItemLike).filter(
+        # Beğenileri getir
+        likes = db.query(models.ItemLike).filter(
             models.ItemLike.item_id == item_id
-        ).count()
+        ).all()
+        
+        # Beğenen kullanıcı bilgilerini getir
+        likes_list = []
+        for like in likes:
+            user = db.query(models.User).filter(models.User.user_id == like.user_id).first()
+            likes_list.append({
+                "like_id": like.like_id,
+                "user_id": like.user_id,
+                "username": user.username if user else f"User {like.user_id}",
+                "avatar_url": user.avatar_url if user else None,
+                "liked_at": like.liked_at
+            })
         
         return {
             "success": True,
             "item_id": item_id,
-            "total_likes": like_count
+            "total_likes": len(likes),
+            "likes": likes_list
         }
     
     except Exception as e:

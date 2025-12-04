@@ -19,11 +19,11 @@ class ItemCreate(ItemBase):
 	director: Optional[str] = None
 	actors: Optional[str] = None
 	external_api_source: Optional[str] = None
-	external_rating: Optional[int] = None  # API'den gelen rating (0-10)
+	external_rating: Optional[float] = None  # API'den gelen rating (0-10), float olarak
 
 
 class ItemOut(ItemBase):
-	item_id: int
+	item_id: Optional[int] = None  # Optional: DB items için var, external API items için yok
 	item_type: Optional[str] = None
 	year: Optional[int] = None
 	poster_url: Optional[str] = None
@@ -35,7 +35,7 @@ class ItemOut(ItemBase):
 	actors: Optional[str] = None
 	external_api_source: Optional[str] = None
 	created_at: Optional[datetime] = None
-	external_rating: Optional[int] = 0  # API'den gelen rating (0-10)
+	external_rating: Optional[float] = 0  # API'den gelen rating (0-10), float olarak
 	user_rating: Optional[float] = 0  # Kullanıcı reviews'lerinden ortalama
 	combined_rating: Optional[float] = 0  # Hibrid rating (average)
 	review_count: Optional[int] = None  # Number of reviews
@@ -66,19 +66,6 @@ class ReviewOut(BaseModel):
 class ReviewUpdate(BaseModel):
 	review_text: Optional[str] = None
 	rating: Optional[int] = None
-
-
-class RatingOut(BaseModel):
-	"""Ratings tablosundan çekilen puanlar"""
-	rating_id: int
-	user_id: int
-	item_id: int
-	score: int  # 1-10 puan
-	created_at: Optional[datetime] = None
-	username: Optional[str] = None
-	avatar_url: Optional[str] = None
-
-	model_config = {"from_attributes": True}
 
 
 class UserOut(BaseModel):

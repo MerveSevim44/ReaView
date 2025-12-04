@@ -9,8 +9,14 @@ OPEN_LIBRARY_URL = "https://openlibrary.org/search.json"
 
 def search_tmdb(query: str):
     """Search TMDb API for movies and return normalized results."""
-    params = {"api_key": TMDB_API_KEY, "query": query, "language": "tr-TR"}
-    r = requests.get(f"{TMDB_BASE_URL}/search/movie", params=params)
+    # Eğer "popular" sorgusu ise, popüler filmler endpoint'ini kullan
+    if query.lower() == "popular":
+        params = {"api_key": TMDB_API_KEY, "language": "tr-TR", "page": 1}
+        r = requests.get(f"{TMDB_BASE_URL}/movie/popular", params=params)
+    else:
+        params = {"api_key": TMDB_API_KEY, "query": query, "language": "tr-TR"}
+        r = requests.get(f"{TMDB_BASE_URL}/search/movie", params=params)
+    
     if r.status_code != 200:
         raise HTTPException(status_code=500, detail="TMDb API hatası")
     results = r.json().get("results", [])
