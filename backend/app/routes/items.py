@@ -1661,17 +1661,19 @@ def get_custom_lists(
                 ).first()
                 is_follower = follow_record is not None
             
-            # Privacy_level'e göre filtrele
+            # Privacy_level'e göre filtrele - null check ekle
             if is_follower:
                 # Takipçi ise: followers (1) ve public (2) listeleri göster
                 lists = db.query(models.CustomList).filter(
                     models.CustomList.user_id == user_id,
+                    models.CustomList.privacy_level != None,
                     models.CustomList.privacy_level.in_([1, 2])
                 ).all()
             else:
                 # Takipçi değil ise: sadece public (2) listeleri göster
                 lists = db.query(models.CustomList).filter(
                     models.CustomList.user_id == user_id,
+                    models.CustomList.privacy_level != None,
                     models.CustomList.privacy_level == 2
                 ).all()
         
@@ -1685,8 +1687,8 @@ def get_custom_lists(
                 "list_id": lst.list_id,
                 "name": lst.name,
                 "description": lst.description,
-                "is_public": lst.is_public,
-                "privacy_level": lst.privacy_level,
+                "is_public": lst.is_public if hasattr(lst, 'is_public') else 0,
+                "privacy_level": lst.privacy_level if lst.privacy_level is not None else 0,
                 "item_count": items,
                 "created_at": lst.created_at,
                 "updated_at": lst.updated_at
@@ -1702,7 +1704,12 @@ def get_custom_lists(
         }
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_detail = str(e)
+        error_trace = traceback.format_exc()
+        print(f"❌ Custom Lists Error: {error_detail}")
+        print(f"📍 Traceback: {error_trace}")
+        raise HTTPException(status_code=500, detail=f"Custom lists error: {error_detail}")
 
 
 # ============ ÖZEL LİSTE: İTEM EKLE/ÇIKAR ============

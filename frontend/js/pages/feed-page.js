@@ -240,7 +240,7 @@ function renderActivityCard(activity) {
 
   // Kart HTML'i
   return `
-    <div class="activity-card" data-activity-id="${activity_id}" data-activity-type="${activity_type}" data-item-id="${item_id}" data-review-id="${review_id || ''}">
+    <div class="card activity-card" data-activity-id="${activity_id}" data-activity-type="${activity_type}" data-item-id="${item_id}" data-review-id="${review_id || ''}" data-type="${item_type || ''}">
       <!-- Header -->
       <div class="activity-header">
         <div class="activity-avatar">

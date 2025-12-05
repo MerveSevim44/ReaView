@@ -1,32 +1,86 @@
-/* frontend/css/navbar.css */
+/* frontend/css/navbar.css - Soft Minimal Floating Navbar */
 
 .navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 15px 20px;
+  background: linear-gradient(135deg, 
+    rgba(232, 213, 242, 0.4) 0%,
+    rgba(255, 248, 220, 0.4) 50%,
+    rgba(255, 253, 251, 0.4) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--text-primary);
+  padding: var(--space-4) var(--space-6);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  box-shadow: 
+    0 8px 32px rgba(232, 213, 242, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.8);
+  margin: var(--space-4) auto;
+  max-width: 1200px;
+  border-radius: 16px;
   position: sticky;
-  top: 0;
+  top: var(--space-4);
   z-index: 100;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transition: all var(--transition-base);
+}
+
+.navbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 2px;
+  background: linear-gradient(135deg, 
+    rgba(232, 213, 242, 0.6) 0%,
+    rgba(245, 196, 216, 0.6) 50%,
+    rgba(199, 179, 229, 0.6) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.4;
+}
+
+.navbar:hover {
+  box-shadow: 
+    0 12px 40px rgba(232, 213, 242, 0.3),
+    0 0 0 1px rgba(199, 179, 229, 0.4);
+  transform: translateY(-2px);
 }
 
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: bold;
+  gap: var(--space-2);
+  font-size: 1.375rem;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: none;
-  color: white;
+  background: linear-gradient(135deg, var(--accent-lavender) 0%, var(--accent-rose) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: var(--font-display);
+  position: relative;
+  transition: all var(--transition-base);
+}
+
+.navbar-brand::before {
+  content: '📚';
+  font-size: 1.5rem;
+  -webkit-text-fill-color: initial;
+  transition: all var(--transition-base);
+  filter: drop-shadow(0 2px 4px rgba(232, 213, 242, 0.3));
 }
 
 .navbar-brand:hover {
-  opacity: 0.9;
+  transform: scale(1.03);
+}
+
+.navbar-brand:hover::before {
+  transform: rotate(-8deg) scale(1.1);
 }
 
 .navbar-center {
@@ -36,31 +90,69 @@
   gap: 20px;
 }
 
+.navbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
 .navbar-nav {
   display: flex;
-  gap: 15px;
+  gap: var(--space-2);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .navbar-nav a {
-  color: white;
+  color: var(--text-secondary);
   text-decoration: none;
-  padding: 8px 12px;
-  border-radius: 5px;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  font-weight: 500;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-base);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.navbar-nav a::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  background: var(--pastel-lavender);
+  border-radius: 50%;
+  opacity: 0;
+  transition: all var(--transition-base);
 }
 
 .navbar-nav a:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(232, 213, 242, 0.3);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.navbar-nav a:hover::before {
+  opacity: 1;
 }
 
 .navbar-nav a.active {
-  background: rgba(255, 255, 255, 0.3);
-  border-bottom: 2px solid white;
+  background: linear-gradient(135deg, rgba(232, 213, 242, 0.6) 0%, rgba(245, 196, 216, 0.6) 100%);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(232, 213, 242, 0.3);
+}
+
+.navbar-nav a.active::before {
+  background: var(--accent-lavender);
+  opacity: 1;
+}
+
+.navbar-nav a.active::after {
+  display: none;
 }
 
 .navbar-user {
@@ -72,29 +164,76 @@
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: rgba(232, 213, 242, 0.25);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .user-info:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(232, 213, 242, 0.4);
+  border-color: rgba(199, 179, 229, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 213, 242, 0.3);
 }
 
 .user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: white;
-  color: #667eea;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--pastel-lavender) 0%, var(--pastel-pink) 100%);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  font-family: var(--font-display);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    0 2px 8px rgba(232, 213, 242, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transition: all var(--transition-base);
+}
+
+.user-info:hover .user-avatar {
+  transform: scale(1.05);
+  box-shadow: 
+    0 4px 12px rgba(232, 213, 242, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.user-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+  .navbar {
+    border-radius: var(--radius-lg);
+    margin: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  .navbar-center {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar-brand {
+    font-size: 1.25rem;
+  }
+  
+  .user-name {
+    display: none;
+  }
 }
 
 .user-name {

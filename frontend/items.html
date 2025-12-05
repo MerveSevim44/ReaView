@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>İçerik Detayı • BiblioNet</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="./css/item.css" />
   
   <style>
     * {
@@ -1104,15 +1106,15 @@
       const stars = renderStars(rating);
 
       const html = `
-        <div class="detail-container">
-          <div class="detail-header">
+        <div class="detail-container" data-type="${item.item_type || ''}">
+          <div class="detail-header item-header" data-type="${item.item_type || ''}">
             <div class="detail-cover">
-              <img src="${item.poster_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22280%22 height=%22400%22%3E%3Crect fill=%22%23e0e0e0%22 width=%22280%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2216%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3EGörsel Yok%3C/text%3E%3C/svg%3E'}" 
+              <img class="item-poster" src="${item.poster_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22280%22 height=%22400%22%3E%3Crect fill=%22%23e0e0e0%22 width=%22280%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2216%22 fill=%22%23999%22 text-anchor=%22middle%22 dy=%22.3em%22%3EGörsel Yok%3C/text%3E%3C/svg%3E'}" 
                    alt="${item.title}" style="background-color: #f0f0f0;" onerror="this.style.backgroundColor='#f0f0f0'" />
               <span class="type-badge">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</span>
             </div>
 
-            <div class="detail-info">
+            <div class="detail-info item-info">
               <h1>${item.title}</h1>
               ${isExternalItem ? `<span class="source-badge">🔗 External API</span>` : ''}
               
@@ -1167,10 +1169,10 @@
             <div id="ratingsList" class="ratings-list"></div>
           </div>
 
-          <div class="comments-section">
+          <div class="reviews-section" data-type="${item.item_type || ''}">
             <div class="section-title">💬 Yorumlar</div>
             
-            <div class="comment-form">
+            <div class="review-form">
               <textarea id="commentText" placeholder="Yorumunuzu yazın..."></textarea>
               <button class="submit-btn" onclick="submitComment()">Gönder</button>
             </div>
