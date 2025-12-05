@@ -141,7 +141,8 @@ class CustomList(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    is_public = Column(Integer, default=0)  # 0=private, 1=public
+    is_public = Column(Integer, default=0)  # Deprecated: use privacy_level instead
+    privacy_level = Column(Integer, default=0)  # 0=private, 1=followers, 2=public
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 

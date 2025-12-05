@@ -1246,13 +1246,19 @@
           
           console.log(`📤 API Puanı Kaydediliyor (Ratings): ${sourceId} -> ${rating}/10`);
           
+          // Title'ın güvenli şekilde gönderilmesi
+          if (!currentItem.title || currentItem.title.trim() === '' || currentItem.title === 'Unknown') {
+            alert('❌ Hata: İçeriğin başlığı alınamadı. Lütfen sayfayı yenileyin.');
+            return;
+          }
+          
           const response = await fetch(`${API_BASE}/items/api/rating/${sourceId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               user_id: currentUser.user_id,
               rating: rating,
-              title: currentItem.title || "Unknown",
+              title: currentItem.title,
               item_type: currentItem.item_type || "movie",
               poster_url: currentItem.poster_url || "",
               year: currentItem.year || null,
@@ -1661,12 +1667,11 @@
           
           // sourceId yoksa oluştur
           if (!sourceId) {
-            if (currentItem.source === 'tmdb') {
-              sourceId = `tmdb_${currentItem.id || currentItem.external_api_id}`;
-            } else if (currentItem.source === 'google_books') {
-              sourceId = `google_books_${currentItem.id || currentItem.external_api_id}`;
-            } else if (currentItem.source === 'openlib') {
-              sourceId = `openlib_${currentItem.id || currentItem.external_api_id}`;
+            const apiSource = currentItem.external_api_source || currentItem.source;
+            const apiId = currentItem.external_api_id || currentItem.id;
+            
+            if (apiSource && apiId) {
+              sourceId = `${apiSource}_${apiId}`;
             }
           }
           
@@ -1714,7 +1719,16 @@
 
     function renderComments(comments) {
       const container = document.getElementById('commentsList');
-      if (!container) return;
+      console.log('🎨 renderComments çağrıldı:', { 
+        containerExists: !!container, 
+        commentsLength: comments?.length,
+        comments: comments 
+      });
+      
+      if (!container) {
+        console.error('❌ commentsList container bulunamadı!');
+        return;
+      }
       
       // Oy sayısını güncelle
       const ratingCount = comments ? comments.length : 0;
@@ -1728,8 +1742,11 @@
           ? 'Bu içerik için henüz yorum yok' 
           : 'Henüz yorum yok. İlk yorum yapan siz olun!';
         container.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+        console.log('ℹ️ Boş yorum mesajı gösteriliyor');
         return;
       }
+      
+      console.log('✅ Yorumlar render ediliyor:', comments.length);
 
       container.innerHTML = comments.map((comment, idx) => {
         const author = comment.username || comment.author || 'Anonim';
@@ -1884,16 +1901,21 @@
       if (isExternalItem) {
         // API items için comment POST
         try {
+          // Title'ın güvenli şekilde kontrol edilmesi
+          if (!currentItem.title || currentItem.title.trim() === '' || currentItem.title === 'Unknown') {
+            alert('❌ Hata: İçeriğin başlığı alınamadı. Lütfen sayfayı yenileyin.');
+            return;
+          }
+          
           let sourceId = currentItem.sourceId;
           
           // sourceId yoksa oluştur
           if (!sourceId) {
-            if (currentItem.source === 'tmdb') {
-              sourceId = `tmdb_${currentItem.id || currentItem.external_api_id}`;
-            } else if (currentItem.source === 'google_books') {
-              sourceId = `google_books_${currentItem.id || currentItem.external_api_id}`;
-            } else if (currentItem.source === 'openlib') {
-              sourceId = `openlib_${currentItem.id || currentItem.external_api_id}`;
+            const apiSource = currentItem.external_api_source || currentItem.source;
+            const apiId = currentItem.external_api_id || currentItem.id;
+            
+            if (apiSource && apiId) {
+              sourceId = `${apiSource}_${apiId}`;
             }
           }
           
@@ -1916,8 +1938,8 @@
           if (response.ok) {
             document.getElementById('commentText').value = '';
             selectedRating = 0;
+            await loadComments(); // Önce yorumları yükle
             alert('Yorum başarıyla eklendi!');
-            loadComments();
           } else {
             const error = await response.text();
             console.error('❌ API Yorum Ekleme Hatası:', response.status, error);
@@ -1943,7 +1965,7 @@
 
           if (response.ok) {
             document.getElementById('commentText').value = '';
-            loadComments();
+            await loadComments(); // Önce yorumları yükle
             alert('Yorum başarıyla eklendi!');
           } else {
             const error = await response.text();

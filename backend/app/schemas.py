@@ -80,6 +80,8 @@ class UserOut(BaseModel):
 
 
 class UserUpdate(BaseModel):
+	username: Optional[str] = None
+	email: Optional[str] = None
 	bio: Optional[str] = None
 	avatar_url: Optional[str] = None
 

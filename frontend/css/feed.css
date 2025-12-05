@@ -638,3 +638,23 @@ main h1 {
     font-size: 11px;
   }
 }
+
+/* Activity Action Text Styling */
+.activity-action-text {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.activity-action-text em {
+  font-style: italic;
+  color: #667eea;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.activity-action-text strong {
+  color: #667eea;
+  font-weight: 600;
+}

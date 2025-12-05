@@ -117,12 +117,11 @@ def register(
     }
 
 
-@router.get("/current-user")
-def get_current_user(
+def verify_current_user(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
-):
-    """Aktif kullanıcı bilgisini al"""
+) -> models.User:
+    """Dependency function to verify and get current user"""
     # Authorization header'dan token çıkart
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token gerekli")
@@ -147,6 +146,17 @@ def get_current_user(
         raise
     except Exception as e:
         raise HTTPException(status_code=401, detail="Token geçersiz")
+
+
+@router.get("/current-user")
+def get_current_user(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Aktif kullanıcı bilgisini al"""
+    # Use the verify function
+    user = verify_current_user(authorization, db)
+    return user
 
 
 @router.post("/logout")

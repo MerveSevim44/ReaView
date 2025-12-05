@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ayarlar • BiblioNet</title>
+  <link rel="stylesheet" href="./css/navbar.css" />
+  <link rel="stylesheet" href="./css/settings.css" />
+</head>
+<body>
+  <!-- Navbar otomatik olarak eklenecek -->
+
+  <div class="container">
+    <!-- Header -->
+    <header class="settings-header">
+      <div class="header-content">
+        <h1>⚙️ Ayarlar</h1>
+        <a href="./profile.html" class="btn-secondary">👤 Profile Dön</a>
+      </div>
+    </header>
+
+    <div class="settings-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="settings-sidebar">
+        <nav class="settings-nav">
+          <button class="nav-item active" data-section="profile">
+            👤 Profil Bilgileri
+          </button>
+          <button class="nav-item" data-section="account">
+            🔐 Hesap Güvenliği
+          </button>
+          <button class="nav-item" data-section="privacy">
+            🔒 Gizlilik
+          </button>
+          <button class="nav-item" data-section="notifications">
+            🔔 Bildirimler
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="settings-content">
+        <!-- Profile Section -->
+        <section id="profileSection" class="settings-section active">
+          <div class="card">
+            <h2>👤 Profil Bilgileri</h2>
+            <p class="section-description">
+              Profilinizde görünecek bilgilerinizi güncelleyin.
+            </p>
+
+            <form id="profileForm" class="settings-form">
+              <div class="form-group">
+                <label for="username">Kullanıcı Adı</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  class="form-input"
+                  required
+                  minlength="3"
+                  maxlength="30"
+                />
+                <small class="form-hint">3-30 karakter arası olmalı</small>
+              </div>
+
+              <div class="form-group">
+                <label for="email">E-posta</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  class="form-input"
+                  required
+                />
+                <small class="form-hint">Geçerli bir e-posta adresi girin</small>
+              </div>
+
+              <div class="form-group">
+                <label for="bio">Biyografi</label>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  class="form-textarea"
+                  rows="4"
+                  maxlength="500"
+                  placeholder="Kendinizden bahsedin..."
+                ></textarea>
+                <small class="form-hint">Maksimum 500 karakter</small>
+              </div>
+
+              <div class="form-group">
+                <label>Avatar Seçin</label>
+                <div id="avatarGallery" class="avatar-gallery">
+                  <!-- Avatarlar dinamik olarak yüklenecek -->
+                </div>
+                <small class="form-hint">Bir avatar seçin veya aşağıya özel URL girin</small>
+              </div>
+
+              <div class="form-group">
+                <label for="avatarUrl">Özel Avatar URL (İsteğe bağlı)</label>
+                <input
+                  type="text"
+                  id="avatarUrl"
+                  name="avatarUrl"
+                  class="form-input"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+                <small class="form-hint">Kendi URL'nizi de girebilirsiniz</small>
+              </div>
+
+              <div class="avatar-preview" id="avatarPreview">
+                <img src="" alt="Avatar önizleme" id="avatarPreviewImg" />
+              </div>
+
+              <button type="submit" class="btn-primary">
+                💾 Değişiklikleri Kaydet
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Account Security Section -->
+        <section id="accountSection" class="settings-section">
+          <div class="card">
+            <h2>🔐 Hesap Güvenliği</h2>
+            <p class="section-description">
+              Hesabınızın güvenliğini sağlamak için şifrenizi güncelleyin.
+            </p>
+
+            <form id="passwordForm" class="settings-form">
+              <div class="form-group">
+                <label for="currentPassword">Mevcut Şifre</label>
+                <input
+                  type="password"
+                  id="currentPassword"
+                  name="currentPassword"
+                  class="form-input"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="newPassword">Yeni Şifre</label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  name="newPassword"
+                  class="form-input"
+                  minlength="6"
+                  required
+                />
+                <small class="form-hint">En az 6 karakter olmalı</small>
+              </div>
+
+              <div class="form-group">
+                <label for="confirmPassword">Yeni Şifre (Tekrar)</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  class="form-input"
+                  minlength="6"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn-primary">
+                🔑 Şifremi Değiştir
+              </button>
+            </form>
+          </div>
+
+          <div class="card danger-zone">
+            <h2>⚠️ Tehlikeli Bölge</h2>
+            <p class="section-description">
+              Bu işlemler geri alınamaz. Dikkatli olun.
+            </p>
+
+            <button class="btn-danger" id="deleteAccountBtn">
+              🗑️ Hesabımı Sil
+            </button>
+          </div>
+        </section>
+
+        <!-- Privacy Section -->
+        <section id="privacySection" class="settings-section">
+          <div class="card">
+            <h2>🔒 Gizlilik Ayarları</h2>
+            <p class="section-description">
+              Profilinizin ve içeriklerinizin görünürlüğünü kontrol edin.
+            </p>
+
+            <form id="privacyForm" class="settings-form">
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="privateProfile"
+                  name="privateProfile"
+                />
+                <label for="privateProfile">
+                  <strong>Profilimi gizli yap</strong>
+                  <small>Sadece takipçilerim profilimi görebilsin</small>
+                </label>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="hideActivity"
+                  name="hideActivity"
+                />
+                <label for="hideActivity">
+                  <strong>Aktivitelerimi gizle</strong>
+                  <small>Beğenilerim ve yorumlarım başkalarına gösterilmesin</small>
+                </label>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="hideLibrary"
+                  name="hideLibrary"
+                />
+                <label for="hideLibrary">
+                  <strong>Kütüphanemi gizle</strong>
+                  <small>İzlediklerim ve okumalarım sadece bana görünsün</small>
+                </label>
+              </div>
+
+              <button type="submit" class="btn-primary">
+                💾 Gizlilik Ayarlarını Kaydet
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Notifications Section -->
+        <section id="notificationsSection" class="settings-section">
+          <div class="card">
+            <h2>🔔 Bildirim Tercihleri</h2>
+            <p class="section-description">
+              Hangi bildirimleri almak istediğinizi seçin.
+            </p>
+
+            <form id="notificationsForm" class="settings-form">
+              <h3>E-posta Bildirimleri</h3>
+              
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="emailFollows"
+                  name="emailFollows"
+                  checked
+                />
+                <label for="emailFollows">
+                  <strong>Yeni takipçi</strong>
+                  <small>Birisi sizi takip ettiğinde e-posta gönder</small>
+                </label>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="emailLikes"
+                  name="emailLikes"
+                  checked
+                />
+                <label for="emailLikes">
+                  <strong>Beğeniler</strong>
+                  <small>Yorumlarınız beğenildiğinde e-posta gönder</small>
+                </label>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="emailComments"
+                  name="emailComments"
+                  checked
+                />
+                <label for="emailComments">
+                  <strong>Yorumlar</strong>
+                  <small>Yorumlarınıza cevap geldiğinde e-posta gönder</small>
+                </label>
+              </div>
+
+              <hr class="divider" />
+
+              <h3>Uygulama Bildirimleri</h3>
+
+              <div class="form-group checkbox-group">
+                <input
+                  type="checkbox"
+                  id="pushNotifications"
+                  name="pushNotifications"
+                  checked
+                />
+                <label for="pushNotifications">
+                  <strong>Push bildirimleri</strong>
+                  <small>Tarayıcı bildirimleri almak istiyorum</small>
+                </label>
+              </div>
+
+              <button type="submit" class="btn-primary">
+                💾 Bildirim Ayarlarını Kaydet
+              </button>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Delete Account Modal -->
+  <div id="deleteAccountModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚠️ Hesabı Sil</h2>
+        <button class="modal-close" id="closeDeleteModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>
+          <strong>Bu işlem geri alınamaz!</strong>
+        </p>
+        <p>
+          Hesabınızı sildiğinizde tüm verileriniz, yorumlarınız, 
+          listeleriniz ve aktiviteleriniz kalıcı olarak silinecektir.
+        </p>
+        <p>Devam etmek istediğinize emin misiniz?</p>
+        
+        <div class="form-group">
+          <label for="confirmDeleteText">
+            Onaylamak için <strong>"HESABIMI SIL"</strong> yazın:
+          </label>
+          <input
+            type="text"
+            id="confirmDeleteText"
+            class="form-input"
+            placeholder="HESABIMI SIL"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelDeleteBtn">İptal</button>
+        <button class="btn-danger" id="confirmDeleteBtn" disabled>
+          Hesabı Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Toast -->
+  <div id="successToast" class="toast toast-success" style="display: none;">
+    <span class="toast-icon">✅</span>
+    <span class="toast-message"></span>
+  </div>
+
+  <!-- Error Toast -->
+  <div id="errorToast" class="toast toast-error" style="display: none;">
+    <span class="toast-icon">❌</span>
+    <span class="toast-message"></span>
+  </div>
+
+  <script type="module" src="./js/pages/settings.js"></script>
+</body>
+</html>

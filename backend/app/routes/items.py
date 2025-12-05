@@ -4,6 +4,7 @@ from sqlalchemy import text, desc, func
 from ..database import get_db
 from .. import models, schemas
 from ..services.external_api import get_tmdb_reviews, get_google_books_reviews, search_tmdb, search_google_books, search_openlibrary
+from .deps import get_current_user
 import requests
 import os
 
@@ -828,6 +829,51 @@ def add_comment(item_id: int, review: schemas.ReviewCreate, db: Session = Depend
     return schemas.ReviewOut(**review_dict)
 
 
+# 📖 DB item yorumlarını getir
+@router.get("/{item_id}/comments")
+def get_item_comments(item_id: int, db: Session = Depends(get_db)):
+    """DB item'ının tüm yorumlarını getir"""
+    try:
+        print(f"📥 DB Comments GET: item_id={item_id}")
+        
+        # Item var mı kontrol et
+        item = db.query(models.Item).filter(models.Item.item_id == item_id).first()
+        if not item:
+            print(f"❌ Item bulunamadı: {item_id}")
+            return []
+        
+        # Item'ın tüm yorumlarını getir
+        reviews = db.query(models.Review).filter(
+            models.Review.item_id == item_id
+        ).order_by(models.Review.created_at.desc()).all()
+        
+        print(f"✅ {len(reviews)} yorum bulundu")
+        
+        # Username ve avatar ekle
+        result = []
+        for review in reviews:
+            user = db.query(models.User).filter(models.User.user_id == review.user_id).first()
+            review_dict = {
+                "review_id": review.review_id,
+                "user_id": review.user_id,
+                "username": user.username if user else f"User {review.user_id}",
+                "avatar_url": user.avatar_url if user else None,
+                "item_id": review.item_id,
+                "review_text": review.review_text,
+                "rating": review.rating,
+                "created_at": review.created_at.isoformat() if review.created_at else None
+            }
+            result.append(review_dict)
+        
+        return result
+    
+    except Exception as e:
+        print(f"❌ DB Comments GET Hatası: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
 # ============================================
 # API ITEMS ENDPOINTS (Harici API kaynakları için)
 # ============================================
@@ -959,7 +1005,7 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
         user_id = comment.get("user_id")
         review_text = comment.get("review_text")
         rating = comment.get("rating")
-        title = comment.get("title", "Unknown")
+        title = comment.get("title", "").strip() if comment.get("title") else ""
         item_type = comment.get("item_type", "movie")
         poster_url = comment.get("poster_url", "")
         year = comment.get("year")
@@ -981,6 +1027,14 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
             external_api_id = parts[1]  # "1094473", "xyz", etc
         
         print(f"📊 Parsed source_id: source_id={source_id}, api_source={external_api_source}, api_id={external_api_id}")
+        
+        # Title boşsa veya "Unknown" ise, error raise et - frontend'den yeniden gönder
+        if not title or title.lower() == "unknown":
+            print(f"⚠️ HATA: Title boş veya 'Unknown' - frontend'den title bilgisi gelmedi!")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Title bilgisi gerekli. Frontend'den gönder. (title: '{title}')"
+            )
         
         # API item'ı DB'ye kaydet (varsa skip et)
         # Arama kriterleri: external_api_id ve external_api_source
@@ -1217,7 +1271,16 @@ def rate_api_item(source_id: str, rating_data: dict = Body(...), db: Session = D
         
         if not existing_item:
             # Gerekli alanları al
-            title = rating_data.get("title", "Unknown")
+            title = rating_data.get("title", "").strip() if rating_data.get("title") else ""
+            
+            # Title boşsa veya "Unknown" ise, error raise et
+            if not title or title.lower() == "unknown":
+                print(f"⚠️ HATA: Title boş veya 'Unknown' - frontend'den title bilgisi gelmedi!")
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Title bilgisi gerekli. Frontend'den gönder. (title: '{title}')"
+                )
+            
             item_type = rating_data.get("item_type", "movie")
             poster_url = rating_data.get("poster_url", "")
             year = rating_data.get("year")
@@ -1478,7 +1541,8 @@ def create_custom_list(data: dict = Body(...), db: Session = Depends(get_db)):
             user_id=user_id,
             name=name,
             description=description,
-            is_public=is_public
+            is_public=is_public,
+            privacy_level=is_public  # Backward compatibility: map is_public to privacy_level
         )
         db.add(new_list)
         db.flush()  # Get the ID before commit
@@ -1505,16 +1569,111 @@ def create_custom_list(data: dict = Body(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ============ ÖZEL LİSTE: GETIR ============
-@router.get("/custom-lists/{user_id}")
-def get_custom_lists(user_id: int, db: Session = Depends(get_db)):
+# ============ ÖZEL LİSTE: GÜNCELLE ============
+@router.put("/custom-lists/{list_id}")
+def update_custom_list(list_id: int, data: dict = Body(...), db: Session = Depends(get_db)):
     """
-    Kullanıcının tüm özel listelerini getir
+    Özel liste bilgilerini güncelle (isim, açıklama, gizlilik)
+    Sadece liste sahibi güncelleyebilir
     """
     try:
-        lists = db.query(models.CustomList).filter(
-            models.CustomList.user_id == user_id
-        ).all()
+        user_id = data.get("user_id")
+        name = data.get("name")
+        description = data.get("description")
+        privacy_level = data.get("privacy_level")  # 0=private, 1=followers, 2=public
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id gerekli")
+        
+        # Liste var mı?
+        custom_list = db.query(models.CustomList).filter(
+            models.CustomList.list_id == list_id
+        ).first()
+        
+        if not custom_list:
+            raise HTTPException(status_code=404, detail="Liste bulunamadı")
+        
+        # Sadece liste sahibi güncelleyebilir
+        if custom_list.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Bu listeyi güncelleme yetkiniz yok")
+        
+        # Güncelle
+        if name is not None:
+            custom_list.name = name
+        if description is not None:
+            custom_list.description = description
+        if privacy_level is not None:
+            custom_list.privacy_level = privacy_level
+            # Backward compatibility
+            custom_list.is_public = 1 if privacy_level == 2 else 0
+        
+        db.commit()
+        db.refresh(custom_list)
+        
+        return {
+            "success": True,
+            "message": "Liste güncellendi",
+            "list_id": custom_list.list_id,
+            "name": custom_list.name,
+            "description": custom_list.description,
+            "privacy_level": custom_list.privacy_level
+        }
+    
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ ÖZEL LİSTE: GETIR ============
+@router.get("/custom-lists/{user_id}")
+def get_custom_lists(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Kullanıcının özel listelerini getir
+    Privacy levels: 0=private, 1=followers, 2=public
+    - Kendi listeleri: Hepsini göster
+    - Başkasının listeleri: privacy_level'e göre filtrele
+    
+    current_user_id artık token'dan otomatik alınıyor
+    """
+    try:
+        current_user_id = current_user.user_id
+        is_owner = current_user_id == user_id
+        
+        if is_owner:
+            # Kendi listeleri - hepsini göster
+            lists = db.query(models.CustomList).filter(
+                models.CustomList.user_id == user_id
+            ).all()
+        else:
+            # Başkasının profili - gizlilik kontrolü
+            # Önce takipçi mi kontrol et
+            is_follower = False
+            if current_user_id:
+                follow_record = db.query(models.Follow).filter(
+                    models.Follow.follower_id == current_user_id,
+                    models.Follow.followed_id == user_id
+                ).first()
+                is_follower = follow_record is not None
+            
+            # Privacy_level'e göre filtrele
+            if is_follower:
+                # Takipçi ise: followers (1) ve public (2) listeleri göster
+                lists = db.query(models.CustomList).filter(
+                    models.CustomList.user_id == user_id,
+                    models.CustomList.privacy_level.in_([1, 2])
+                ).all()
+            else:
+                # Takipçi değil ise: sadece public (2) listeleri göster
+                lists = db.query(models.CustomList).filter(
+                    models.CustomList.user_id == user_id,
+                    models.CustomList.privacy_level == 2
+                ).all()
         
         custom_lists = []
         for lst in lists:
@@ -1527,6 +1686,7 @@ def get_custom_lists(user_id: int, db: Session = Depends(get_db)):
                 "name": lst.name,
                 "description": lst.description,
                 "is_public": lst.is_public,
+                "privacy_level": lst.privacy_level,
                 "item_count": items,
                 "created_at": lst.created_at,
                 "updated_at": lst.updated_at
@@ -1535,6 +1695,8 @@ def get_custom_lists(user_id: int, db: Session = Depends(get_db)):
         return {
             "success": True,
             "user_id": user_id,
+            "current_user_id": current_user_id,
+            "is_own_profile": is_owner,
             "lists": custom_lists,
             "total": len(custom_lists)
         }
@@ -1876,10 +2038,19 @@ def delete_custom_list(list_id: int, db: Session = Depends(get_db)):
 
 # ============ LİSTELER: İÇERİĞİ GETIR ============
 @router.get("/lists/{list_id}/items")
-def get_list_items(list_id: int, db: Session = Depends(get_db)):
+def get_list_items(
+    list_id: int, 
+    current_user_id: int = Query(None, description="İsteği yapan kullanıcının ID'si"),
+    db: Session = Depends(get_db)
+):
     """
     Liste içindeki tüm itemleri getir
-    list_id: İçeriğini almak istediğimiz listenin ID'si
+    Privacy levels: 0=private, 1=followers, 2=public
+    
+    GİZLİLİK KURALLARI:
+    - Liste sahibi: Her zaman erişebilir
+    - Takipçi: private hariç erişebilir (followers + public)
+    - Diğerleri: Sadece public listelere erişebilir
     """
     try:
         # Liste var mı?
@@ -1889,6 +2060,34 @@ def get_list_items(list_id: int, db: Session = Depends(get_db)):
         
         if not custom_list:
             raise HTTPException(status_code=404, detail="Liste bulunamadı")
+        
+        # Gizlilik kontrolü
+        is_owner = current_user_id and current_user_id == custom_list.user_id
+        
+        if not is_owner:
+            # Takipçi mi kontrol et
+            is_follower = False
+            if current_user_id:
+                follow_record = db.query(models.Follow).filter(
+                    models.Follow.follower_id == current_user_id,
+                    models.Follow.followed_id == custom_list.user_id
+                ).first()
+                is_follower = follow_record is not None
+            
+            # Privacy kontrolü
+            privacy_level = custom_list.privacy_level
+            
+            if privacy_level == 0:  # Private
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Bu liste özeldir ve sadece sahibi erişebilir"
+                )
+            elif privacy_level == 1 and not is_follower:  # Followers only
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Bu liste sadece takipçilere açıktır"
+                )
+            # privacy_level == 2 (public) -> herkes erişebilir
         
         # Listedeki itemleri getir
         list_items = db.query(models.ListItem).filter(
@@ -1944,6 +2143,9 @@ def get_list_items(list_id: int, db: Session = Depends(get_db)):
             "list_name": custom_list.name,
             "list_description": custom_list.description,
             "is_public": custom_list.is_public,
+            "privacy_level": custom_list.privacy_level,
+            "user_id": custom_list.user_id,
+            "is_owner": is_owner,
             "created_at": custom_list.created_at.isoformat() if custom_list.created_at else None,
             "updated_at": custom_list.updated_at.isoformat() if custom_list.updated_at else None,
             "items": items,

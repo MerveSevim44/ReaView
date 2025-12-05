@@ -774,3 +774,16 @@ body {
     font-size: 18px;
   }
 }
+
+/* Activity Item Styling */
+.activity-item em {
+  font-style: italic;
+  color: #667eea;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.activity-item strong {
+  color: #667eea;
+  font-weight: 600;
+}

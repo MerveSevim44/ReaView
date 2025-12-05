@@ -30,4 +30,6 @@ echo   Kapatmak icin pencereyi kapayin
 echo ========================================
 echo.
 
+
+
 pause

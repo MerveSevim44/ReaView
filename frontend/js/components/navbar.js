@@ -53,15 +53,24 @@ export function initializeNavbar() {
     </div>
   `;
 
-  // Check if navbar element exists (e.g., in list-detail.html)
-  const existingNavbar = document.getElementById("navbar");
-  if (existingNavbar && existingNavbar.classList.contains("navbar")) {
-    // Navbar container exists, just fill it
+  // Check if navbar already exists on the page
+  let existingNavbar = document.querySelector(".navbar");
+  
+  if (existingNavbar) {
+    // Navbar already exists, just update its content
     existingNavbar.innerHTML = navbarContent;
   } else {
-    // No navbar element, create one
-    const navbarHTML = `<nav class="navbar">${navbarContent}</nav>`;
-    document.body.insertAdjacentHTML("afterbegin", navbarHTML);
+    // Check if there's a navbar container element
+    const navbarContainer = document.getElementById("navbar");
+    if (navbarContainer) {
+      // Use the existing container
+      navbarContainer.className = "navbar";
+      navbarContainer.innerHTML = navbarContent;
+    } else {
+      // Create a new navbar element
+      const navbarHTML = `<nav class="navbar">${navbarContent}</nav>`;
+      document.body.insertAdjacentHTML("afterbegin", navbarHTML);
+    }
   }
 
   // Add CSS file if not already added

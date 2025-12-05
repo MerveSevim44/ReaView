@@ -100,7 +100,7 @@ async function loadProfile() {
     isOwnProfile = currentUserId === profileUserId;
     userBio = user.bio || "";
 
-    // Avatar URL - convert file:// to API endpoint or use placeholder
+    // Avatar URL - convert to proper path
     let avatarUrl = user.avatar_url;
     console.log(`📸 Avatar URL from API: ${avatarUrl}`);
     
@@ -110,6 +110,12 @@ async function loadProfile() {
         const filename = avatarUrl.split('/').pop();
         avatarUrl = `${API_BASE}/users/avatars/${filename}`;
         console.log(`📸 Converted file:// to API endpoint: ${avatarUrl}`);
+      }
+      // If relative path (./avatars/), convert to absolute path
+      else if (avatarUrl.startsWith('./avatars/')) {
+        const filename = avatarUrl.replace('./avatars/', '');
+        avatarUrl = `./avatars/${filename}`;
+        console.log(`📸 Converted relative path: ${avatarUrl}`);
       }
     }
     
@@ -175,17 +181,45 @@ function renderActivity(activity) {
   const activityTypes = {
     review: "yorum yaptı",
     rating: "puan verdi",
-    list_add: "listeye ekledi"
+    list_add: "listeye ekledi",
+    like_review: "yorumu beğendi",
+    like_item: "içeriği beğendi",
+    comment_review: "yoruma yorum yaptı",
+    follow: "takip etmeye başladı"
   };
 
   const actionText = activityTypes[activity.activity_type] || "bir şey yaptı";
-  const titleText = activity.title ? `: <em>${activity.title}</em>` : "";
+  
+  // Title'ı güvenli hale getir
+  const displayTitle = activity.title && activity.title.trim() !== '' ? activity.title : 'İçerik';
+  const titleText = activity.title ? ` - <em>${displayTitle}</em>` : "";
+  
+  // comment_review için review sahibinin adını da ekle
+  let fullAction = actionText;
+  let referencedReviewHtml = "";
+  
+  if (activity.activity_type === "comment_review" && activity.review_owner_username) {
+    fullAction = `<strong>${activity.review_owner_username}</strong>'nin yorumuna yorum yaptı`;
+    
+    // Yorumun text'ini göster
+    if (activity.referenced_review_text) {
+      const truncated = activity.referenced_review_text.length > 150 
+        ? activity.referenced_review_text.substring(0, 150) + '...' 
+        : activity.referenced_review_text;
+      referencedReviewHtml = `
+        <div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-left: 2px solid #667eea; font-size: 12px; font-style: italic; color: #666;">
+          "${truncated}"
+        </div>
+      `;
+    }
+  }
 
   return `
     <div class="activity-item">
       <div>
         <b>${activity.username || `User #${activity.user_id}`}</b>
-        ${actionText}${titleText}
+        ${fullAction}${titleText}
+        ${referencedReviewHtml}
       </div>
       <div class="muted" style="margin-top: 8px;">
         ${formatDateTime(activity.created_at)}
@@ -445,18 +479,69 @@ function renderLibraryTab(status, grouped) {
     return;
   }
 
+  // Check if this is a "to-do" list that needs checkbox
+  const showCheckbox = (status === 'towatch' || status === 'toread') && isOwnProfile;
+
   libraryContent.innerHTML = items.map(item => `
-    <div class="library-item" style="padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 12px;">
-      <img src="${item.poster_url || 'https://via.placeholder.com/60x90'}" 
-           alt="${item.title}"
-           style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;">
-      <div style="flex: 1;">
-        <h3 style="margin: 0 0 4px 0; font-size: 14px;">${item.title}</h3>
-        <p style="margin: 0; color: #999; font-size: 12px;">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</p>
-        <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">Eklendi: ${new Date(item.added_at).toLocaleDateString('tr-TR')}</p>
+    <div class="library-item" 
+         style="padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 12px; align-items: center; transition: background 0.3s;"
+         onmouseover="this.style.backgroundColor='#f5f5f5'" 
+         onmouseout="this.style.backgroundColor='transparent'">
+      ${showCheckbox ? `
+        <div class="checkbox-container" onclick="event.stopPropagation(); markAsCompleted(${item.item_id}, '${status}', this)" 
+             style="cursor: pointer; flex-shrink: 0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="custom-checkbox">
+            <rect x="3" y="3" width="18" height="18" rx="4" stroke="#667eea" stroke-width="2" fill="white"/>
+            <path d="M7 12L10.5 15.5L17 9" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" class="checkmark"/>
+          </svg>
+        </div>
+      ` : ''}
+      <div style="flex: 1; cursor: pointer;" onclick="window.location.href='items.html?id=${item.item_id}'">
+        <div style="display: flex; gap: 12px;">
+          <img src="${item.poster_url || 'https://via.placeholder.com/60x90'}" 
+               alt="${item.title}"
+               style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 4px 0; font-size: 14px;">${item.title}</h3>
+            <p style="margin: 0; color: #999; font-size: 12px;">${item.item_type === 'movie' ? '🎬 Film' : '📖 Kitap'}</p>
+            <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">Eklendi: ${new Date(item.added_at).toLocaleDateString('tr-TR')}</p>
+          </div>
+        </div>
       </div>
     </div>
   `).join("");
+
+  // Add CSS for checkbox animation
+  if (showCheckbox && !document.getElementById('checkbox-styles')) {
+    const style = document.createElement('style');
+    style.id = 'checkbox-styles';
+    style.textContent = `
+      .custom-checkbox {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .checkbox-container:hover .custom-checkbox rect {
+        fill: #f0f4ff;
+        stroke: #5568d3;
+      }
+      .custom-checkbox.checked rect {
+        fill: #667eea;
+        stroke: #667eea;
+      }
+      .custom-checkbox.checked .checkmark {
+        opacity: 1;
+        stroke: white;
+      }
+      @keyframes checkAnim {
+        0% { transform: scale(0.8); opacity: 0; }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .custom-checkbox.checked {
+        animation: checkAnim 0.3s ease-out;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 }
 
 /**
@@ -472,7 +557,7 @@ async function loadCustomLists() {
       createListBtn.style.display = "block";
     }
 
-    // Fetch custom lists
+    // Fetch custom lists - current_user_id artık token'dan alınıyor
     const API_BASE = "http://127.0.0.1:8000";
     const url2 = `${API_BASE}/items/custom-lists/${profileUserId}`;
     console.log(`📡 Özel Listeler yükleniyor: ${url2}`);
@@ -494,24 +579,43 @@ async function loadCustomLists() {
     console.log("✨ Custom Lists:", listsData);
 
     if (!listsData.lists || listsData.lists.length === 0) {
+      const emptyMessage = isOwnProfile 
+        ? '✨ Henüz özel liste oluşturulmamış' 
+        : '🔒 Bu kullanıcının herkese açık listesi yok';
+      
       customLists.innerHTML = `
         <div class="empty-state">
-          <p>✨ Henüz özel liste oluşturulmamış</p>
+          <p>${emptyMessage}</p>
         </div>
       `;
       return;
     }
 
-    customLists.innerHTML = listsData.lists.map(list => `
-      <div class="custom-list-item" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.3s;" 
-           onmouseover="this.style.backgroundColor='#f5f5f5'" 
-           onmouseout="this.style.backgroundColor='transparent'"
-           onclick="window.location.href='list-detail.html?id=${list.list_id}'">
-        <h3 style="margin: 0 0 4px 0; font-size: 14px;">📝 ${list.name}</h3>
-        <p style="margin: 0; color: #999; font-size: 12px;">${list.description || 'Açıklama yok'}</p>
-        <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">📊 ${list.item_count} içerik</p>
-      </div>
-    `).join("");
+    customLists.innerHTML = listsData.lists.map(list => {
+      const privacyIcons = ['🔒', '👥', '🌐'];
+      const privacyTexts = ['Özel', 'Takipçilerime Özel', 'Herkese Açık'];
+      const privacyLevel = list.privacy_level !== undefined ? list.privacy_level : (list.is_public ? 2 : 0);
+      const privacyIcon = privacyIcons[privacyLevel] || '🔒';
+      const privacyText = privacyTexts[privacyLevel] || 'Özel';
+      
+      return `
+        <div class="custom-list-item" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.3s;" 
+             onmouseover="this.style.backgroundColor='#f5f5f5'" 
+             onmouseout="this.style.backgroundColor='transparent'"
+             onclick="window.location.href='list-detail.html?id=${list.list_id}'">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+              <h3 style="margin: 0 0 4px 0; font-size: 14px;">📝 ${list.name}</h3>
+              <p style="margin: 0; color: #999; font-size: 12px;">${list.description || 'Açıklama yok'}</p>
+              <p style="margin: 4px 0 0 0; color: #666; font-size: 12px;">📊 ${list.item_count} içerik</p>
+            </div>
+            <span style="font-size: 11px; color: #999; white-space: nowrap; margin-left: 8px;" title="${privacyText}">
+              ${privacyIcon}
+            </span>
+          </div>
+        </div>
+      `;
+    }).join("");
     
   } catch (error) {
     console.error("Custom lists error:", error);
@@ -600,7 +704,7 @@ function setupEditProfileButton() {
   const saveEditBtn = document.getElementById("saveEditBtn");
   const bioTextarea = document.getElementById("bioTextarea");
   const bioCharCount = document.getElementById("bioCharCount");
-  const avatarOptions = document.querySelectorAll(".avatar-option");
+  const avatarPickerGrid = document.getElementById("avatarPickerGrid");
   const selectedAvatarColor = document.getElementById("selectedAvatarColor");
 
   console.log(`🔍 Edit button setup:`, {
@@ -609,7 +713,7 @@ function setupEditProfileButton() {
     editProfileBtn: editProfileBtn ? "✅" : "❌",
     editProfileModal: editProfileModal ? "✅" : "❌",
     bioTextarea: bioTextarea ? "✅" : "❌",
-    avatarOptions: avatarOptions.length
+    avatarPickerGrid: avatarPickerGrid ? "✅" : "❌"
   });
   
   if (!editProfileBtn || !isOwnProfile || !token) {
@@ -617,10 +721,13 @@ function setupEditProfileButton() {
     return;
   }
 
-  if (!editProfileModal || !bioTextarea || avatarOptions.length === 0) {
+  if (!editProfileModal || !bioTextarea || !avatarPickerGrid) {
     console.error("❌ Modal elements not found in DOM");
     return;
   }
+
+  // Load avatars dynamically
+  loadAvatarsForProfile();
 
   // Open modal when edit button clicked
   editProfileBtn.addEventListener("click", () => {
@@ -629,11 +736,6 @@ function setupEditProfileButton() {
     // Reset form
     bioTextarea.value = userBio || "";
     bioCharCount.textContent = (userBio || "").length;
-    selectedAvatarColor.value = "images1"; // Default avatar
-    
-    // Reset avatar selection
-    avatarOptions.forEach(opt => opt.classList.remove("selected"));
-    if (avatarOptions[0]) avatarOptions[0].classList.add("selected");
     
     // Show modal
     editProfileModal.style.display = "flex";
@@ -642,16 +744,6 @@ function setupEditProfileButton() {
   // Update character count
   bioTextarea.addEventListener("input", () => {
     bioCharCount.textContent = bioTextarea.value.length;
-  });
-
-  // Avatar picker
-  avatarOptions.forEach(option => {
-    option.addEventListener("click", () => {
-      avatarOptions.forEach(opt => opt.classList.remove("selected"));
-      option.classList.add("selected");
-      selectedAvatarColor.value = option.dataset.avatar;
-      console.log(`🎨 Avatar seçildi: ${option.dataset.avatar}`);
-    });
   });
 
   // Close modal buttons
@@ -673,8 +765,7 @@ function setupEditProfileButton() {
   if (saveEditBtn) {
     saveEditBtn.addEventListener("click", async () => {
       const newBio = bioTextarea.value.trim();
-      const avatarName = selectedAvatarColor.value;
-      const avatarUrl = `./avatars/${avatarName}.jpg`;
+      const avatarUrl = selectedAvatarColor.value;
 
       console.log(`💾 Profil kaydediliyor:`, { bio: newBio, avatar: avatarUrl });
 
@@ -734,9 +825,34 @@ function setupCreateListButton() {
 
       const description = prompt("Liste açıklaması (opsiyonel):", "");
       
+      // Gizlilik seçenekleri
+      const privacyOptions = [
+        "0 - 🔒 Sadece Ben (Özel)",
+        "1 - 👥 Sadece Takipçilerim",
+        "2 - 🌐 Herkes (Herkese Açık)"
+      ];
+      
+      const privacyChoice = prompt(
+        "Liste gizlilik ayarını seçin:\n\n" +
+        privacyOptions.join("\n") +
+        "\n\nLütfen 0, 1 veya 2 girin:",
+        "0"
+      );
+      
+      // Validate input
+      const privacyLevel = parseInt(privacyChoice);
+      if (![0, 1, 2].includes(privacyLevel)) {
+        showError("Geçersiz gizlilik seçimi! 0, 1 veya 2 olmalı.");
+        return;
+      }
+      
       try {
         const url4 = `${API_BASE}/items/custom-lists`;
-        console.log(`📡 Yeni liste oluşturuluyor: ${url4}`, { name: listName, description });
+        console.log(`📡 Yeni liste oluşturuluyor: ${url4}`, { 
+          name: listName, 
+          description, 
+          privacy_level: privacyLevel
+        });
         
         const response = await fetch(url4, {
           method: "POST",
@@ -748,7 +864,8 @@ function setupCreateListButton() {
             user_id: currentUserId,
             name: listName.trim(),
             description: description || "",
-            is_public: 0
+            is_public: privacyLevel === 2 ? 1 : 0,
+            privacy_level: privacyLevel
           })
         });
 
@@ -760,8 +877,8 @@ function setupCreateListButton() {
         }
         console.log("✅ Liste başarıyla oluşturuldu", result);
 
-        console.log("✅ Liste oluşturuldu:", result);
-        showSuccess(`"${listName}" listesi başarıyla oluşturuldu!`);
+        const privacyTexts = ["özel", "takipçilerime özel", "herkese açık"];
+        showSuccess(`"${listName}" ${privacyTexts[privacyLevel]} liste olarak oluşturuldu!`);
         
         // Listeyi yeniden yükle
         setTimeout(() => {
@@ -773,5 +890,153 @@ function setupCreateListButton() {
         showError(`Hata: ${error.message}`);
       }
     });
+  }
+}
+
+/**
+ * Mark item as completed (watched/read)
+ */
+window.markAsCompleted = async function(itemId, currentStatus, checkboxContainer) {
+  try {
+    const checkbox = checkboxContainer.querySelector('.custom-checkbox');
+    
+    // Visual feedback - immediately check the box
+    checkbox.classList.add('checked');
+    
+    // Determine new status
+    const newStatus = currentStatus === 'towatch' ? 'watched' : 'read';
+    
+    console.log(`✅ Durum değiştiriliyor: ${currentStatus} -> ${newStatus} (item: ${itemId})`);
+    
+    // Update status via API
+    const response = await fetch(`${API_BASE}/items/${itemId}/library`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      },
+      body: JSON.stringify({
+        user_id: currentUserId,
+        status: newStatus,
+        action: "add"
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`❌ Durum güncelleme hatası: ${response.status}`, errorData);
+      // Revert visual change
+      checkbox.classList.remove('checked');
+      throw new Error("Durum güncellenemedi");
+    }
+
+    const successMessage = currentStatus === 'towatch' ? '✅ İzledim olarak işaretlendi!' : '✅ Okudum olarak işaretlendi!';
+    showSuccess(successMessage);
+    
+    // Wait a bit for animation then reload library
+    setTimeout(async () => {
+      await loadLibrary();
+      
+      // Switch to the appropriate tab
+      const tabs = document.querySelectorAll(".tab-btn");
+      const targetTab = currentStatus === 'towatch' ? 'watched' : 'read';
+      tabs.forEach(tab => {
+        if (tab.dataset.tab === targetTab) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+      
+      // Render the new tab
+      if (window.cachedLibraryGroups) {
+        renderLibraryTab(targetTab, window.cachedLibraryGroups);
+      }
+    }, 800);
+
+  } catch (error) {
+    console.error("❌ İşaretleme hatası:", error);
+    showErrorToast(`Hata: ${error.message}`);
+  }
+};
+
+/**
+ * Load avatars dynamically for profile edit modal
+ */
+async function loadAvatarsForProfile() {
+  const avatarPickerGrid = document.getElementById("avatarPickerGrid");
+  const selectedAvatarColor = document.getElementById("selectedAvatarColor");
+  
+  if (!avatarPickerGrid) {
+    console.error("Avatar picker grid not found");
+    return;
+  }
+
+  try {
+    // Fetch available avatars from API
+    const response = await fetch(`${API_BASE}/users/api/avatars/list`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to load avatars');
+    }
+    
+    const data = await response.json();
+    const avatars = data.avatars || [];
+    
+    // Clear existing grid
+    avatarPickerGrid.innerHTML = '';
+    
+    if (avatars.length === 0) {
+      avatarPickerGrid.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">Henüz avatar bulunmuyor</p>';
+      return;
+    }
+    
+    // Create avatar options
+    avatars.forEach((avatar, index) => {
+      const avatarPath = `./avatars/${avatar}`;
+      const avatarOption = document.createElement('div');
+      avatarOption.className = 'avatar-option';
+      avatarOption.style.cursor = 'pointer';
+      avatarOption.title = avatar;
+      avatarOption.dataset.avatar = avatarPath;
+      
+      const img = document.createElement('img');
+      img.src = avatarPath;
+      img.alt = avatar;
+      img.className = 'avatar-img';
+      img.onerror = () => {
+        avatarOption.style.display = 'none';
+      };
+      
+      avatarOption.appendChild(img);
+      
+      // Click handler
+      avatarOption.addEventListener('click', () => {
+        // Remove selected class from all options
+        document.querySelectorAll('.avatar-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked option
+        avatarOption.classList.add('selected');
+        
+        // Update hidden input
+        selectedAvatarColor.value = avatarPath;
+        console.log(`🎨 Avatar seçildi: ${avatarPath}`);
+      });
+      
+      avatarPickerGrid.appendChild(avatarOption);
+      
+      // Select first avatar by default
+      if (index === 0) {
+        avatarOption.classList.add('selected');
+        selectedAvatarColor.value = avatarPath;
+      }
+    });
+    
+    console.log(`✅ ${avatars.length} avatar yüklendi`);
+  } catch (error) {
+    console.error('Error loading avatars:', error);
+    avatarPickerGrid.innerHTML = '<p style="text-align: center; color: #e53e3e; padding: 20px;">Avatarlar yüklenirken hata oluştu</p>';
   }
 }

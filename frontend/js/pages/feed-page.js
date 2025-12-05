@@ -87,14 +87,14 @@ async function loadFeed() {
   try {
     feedContainer.innerHTML = '<div class="loading">📡 Akış yükleniyor...</div>';
 
-    const currentUser = sessionManager.getCurrentUser();
-    if (!currentUser) {
+    if (!sessionManager.isLoggedIn()) {
       showAuthMessage();
       return;
     }
 
     // İlk sayfayı getir (skip=0, limit=15)
-    const activities = await getFeed(currentUser.id, 0, pageSize);
+    // user_id artık token'dan otomatik alınıyor
+    const activities = await getFeed(0, pageSize);
     
     if (!activities || activities.length === 0) {
       feedContainer.innerHTML = '<div class="empty-state"><p>📭 Henüz aktivite yok. Kullanıcıları takip etmeye başlayın!</p></div>';
@@ -103,6 +103,7 @@ async function loadFeed() {
     }
 
     console.log(`✅ ${activities.length} aktivite yüklendi`);
+    console.log("📊 Aktivite örneği (poster_url kontrolü):", activities[0]);
 
     // Aktiviteleri render et
     const html = activities.map(activity => renderActivityCard(activity)).join("");
@@ -134,12 +135,12 @@ async function loadMoreActivities() {
     loadMoreBtn.disabled = true;
     loadMoreBtn.textContent = "Yükleniyor...";
 
-    const currentUser = sessionManager.getCurrentUser();
     currentPage++;
     const skip = currentPage * pageSize;
 
     // Sonraki sayfayı getir
-    const activities = await getFeed(currentUser.id, skip, pageSize);
+    // user_id artık token'dan otomatik alınıyor
+    const activities = await getFeed(skip, pageSize);
 
     if (!activities || activities.length === 0) {
       hasMore = false;
@@ -180,26 +181,36 @@ async function loadMoreActivities() {
 function renderActivityCard(activity) {
   const { activity_id, activity_type, created_at, user_id, username, avatar_url, 
            item_id, title, item_type, poster_url, year, review_text, rating_score, review_rating,
-           review_id, like_count = 0, comment_count = 0, is_liked_by_user = 0, is_item_liked_by_user = 0 } = activity;
+           review_id, like_count = 0, comment_count = 0, is_liked_by_user = 0, is_item_liked_by_user = 0,
+           review_owner_username = '', referenced_review_text = '', source_id = '' } = activity;
 
   const timestamp = formatRelativeTime(created_at);
   const displayName = username || `Kullanıcı #${user_id}`;
   const profileLink = `./profile.html?user=${user_id}`;
+  
+  // Title'ı güvenli hale getir - empty ise fallback göster
+  const displayTitle = title && title.trim() !== '' ? title : 'İçerik';
+
+  // Debug: Check if poster_url is missing
+  if (!poster_url || poster_url.trim() === '') {
+    console.warn(`⚠️ POSTER EXSİK: "${displayTitle}" (activity_id: ${activity_id}, item_id: ${item_id}, type: ${activity_type})`);
+  }
 
   // Aksiyon metni
   let actionText = "";
   if (activity_type === "rating") {
-    actionText = "bir içeriğe puan verdi";
+    actionText = `<em>${displayTitle}</em> hakkında puan verdi`;
   } else if (activity_type === "review") {
-    actionText = "bir yorum yaptı";
+    actionText = `<em>${displayTitle}</em> hakkında yorum yaptı`;
   } else if (activity_type === "like_review") {
-    actionText = "bir yorumu beğendi";
+    actionText = `<em>${displayTitle}</em> hakkında yapılan yorumu beğendi`;
   } else if (activity_type === "like_item") {
-    actionText = "bir içeriği beğendi";
+    actionText = `<em>${displayTitle}</em>'ı beğendi`;
   } else if (activity_type === "follow") {
     actionText = "birini takip etmeye başladı";
   } else if (activity_type === "comment_review") {
-    actionText = "bir yoruma yorum yaptı";
+    const reviewOwner = review_owner_username ? `<strong>${review_owner_username}</strong>` : "birisinin";
+    actionText = `${reviewOwner}'nin <em>${displayTitle}</em> hakkındaki yorumuna yorum yaptı`;
   } else if (activity_type === "list_add") {
     actionText = "bir liste oluşturdu";
   } else {
@@ -210,18 +221,21 @@ function renderActivityCard(activity) {
   let bodyHtml = "";
   if (activity_type === "rating" && item_id) {
     // Rating aktivitesi - rating_score kullan
-    bodyHtml = renderRatingBody(title, item_type, poster_url, year, rating_score, item_id);
+    bodyHtml = renderRatingBody(displayTitle, item_type, poster_url, year, rating_score, item_id);
   } else if (activity_type === "review" && item_id) {
     // Review aktivitesi - review_text ve review_rating'i birlikte göster
-    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, review_id, item_id);
+    bodyHtml = renderReviewBody(displayTitle, item_type, poster_url, review_text, review_rating, review_id, item_id);
   } else if (activity_type === "like_review") {
     // Review beğenisi
-    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, activity.review_id, item_id);
+    bodyHtml = renderReviewBody(displayTitle, item_type, poster_url, review_text, review_rating, activity.review_id, item_id);
   } else if (activity_type === "like_item" && item_id) {
     // Item beğenisi
-    bodyHtml = renderRatingBody(title, item_type, poster_url, year, 0, item_id);
+    bodyHtml = renderRatingBody(displayTitle, item_type, poster_url, year, 0, item_id);
+  } else if (activity_type === "comment_review") {
+    // Yoruma yapılan yorum - referenced review'u göster
+    bodyHtml = renderCommentReviewBody(referenced_review_text, review_owner_username, displayTitle);
   } else {
-    bodyHtml = renderGenericBody(title || "Aktivite");
+    bodyHtml = renderGenericBody(displayTitle || "Aktivite");
   }
 
   // Kart HTML'i
@@ -283,8 +297,8 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore, itemId)
   const stars = Math.round((ratingScore / 10) * 5);
   let starDisplay = "★".repeat(stars) + "☆".repeat(5 - stars);
 
-  // Placeholder poster
-  const displayPoster = posterUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120'%3E%3Crect fill='%23f0f0f0' width='80' height='120'/%3E%3Ctext x='50%' y='50%' font-size='12' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
+  // Placeholder poster - Check if posterUrl is valid (not empty string, null, or falsy)
+  const displayPoster = (posterUrl && posterUrl.trim() !== '') ? posterUrl : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120'%3E%3Crect fill='%23f0f0f0' width='80' height='120'/%3E%3Ctext x='50%' y='50%' font-size='12' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
 
   return `
     <div class="activity-body rating-type" data-item-id="${itemId}">
@@ -314,8 +328,8 @@ function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, 
     ? reviewText.substring(0, maxExcerptLength).trim() + "..."
     : reviewText;
 
-  // Placeholder poster
-  const displayPoster = posterUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='105'%3E%3Crect fill='%23f0f0f0' width='70' height='105'/%3E%3Ctext x='50%' y='50%' font-size='10' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
+  // Placeholder poster - Check if posterUrl is valid (not empty string, null, or falsy)
+  const displayPoster = (posterUrl && posterUrl.trim() !== '') ? posterUrl : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='105'%3E%3Crect fill='%23f0f0f0' width='70' height='105'/%3E%3Ctext x='50%' y='50%' font-size='10' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
 
   // Rating varsa yıldız göster
   let ratingHtml = "";
@@ -350,6 +364,33 @@ function renderGenericBody(title) {
   return `
     <div class="activity-body" style="padding: 16px;">
       ${title ? `<p><strong>${title}</strong></p>` : '<p style="color: #999;">Aktivite detayı</p>'}
+    </div>
+  `;
+}
+
+/**
+ * Yoruma yapılan yorum aktivitesi body'si
+ * Gösterim: Kimin yorumuna yorum yaptığını ve o yorumun özünü göster
+ */
+function renderCommentReviewBody(referencedReviewText, reviewOwnerUsername, itemTitle) {
+  // Yorumu kısalt (ilk 200 karakter)
+  const truncatedText = referencedReviewText && referencedReviewText.length > 200 
+    ? referencedReviewText.substring(0, 200) + '...' 
+    : referencedReviewText || 'Yorum metni bulunamadı';
+    
+  return `
+    <div class="activity-body activity-comment-body" style="padding: 16px;">
+      <div style="background: #f8f9fa; padding: 12px; border-left: 3px solid #667eea; border-radius: 6px; margin-bottom: 12px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">
+          💬 <strong>${reviewOwnerUsername || 'Birisinin'}</strong> yorumu:
+        </div>
+        <div style="font-size: 14px; color: #555; line-height: 1.5; word-break: break-word;">
+          "${truncatedText}"
+        </div>
+      </div>
+      <div style="font-size: 12px; color: #999;">
+        📚 <em>${itemTitle}</em> hakkında
+      </div>
     </div>
   `;
 }

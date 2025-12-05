@@ -1,10 +1,11 @@
+import webbrowser
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .routes import auth, items, reviews, feed, users, external, follows, likes
 from sqlalchemy import text
 from .database import SessionLocal, engine, init_db
-import os
+import webbrowser
 from pathlib import Path
 
 
@@ -23,8 +24,9 @@ app.add_middleware(
 # Initialize database on startup
 @app.on_event("startup")
 def startup_event():
-    init_db()
-    print("[OK] Application started")
+	init_db()
+	print("[OK] Application started")
+	webbrowser.open("http://localhost:8080/")
 
 # Mount avatars directory as static files
 avatars_dir = Path(__file__).parent.parent / "avatars"
