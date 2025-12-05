@@ -295,6 +295,116 @@
       padding: 40px;
       color: #999;
     }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: #333;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .modal-close:hover {
+      color: #333;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .likes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .like-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+
+    .like-item-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #667eea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .like-item-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .like-item-info {
+      flex: 1;
+    }
+
+    .like-item-username {
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .like-item-username:hover {
+      color: #667eea;
+    }
+
+    .like-item-time {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
@@ -310,6 +420,19 @@
       <button class="btn-load-more" id="load-more-btn">Daha Fazla Yükle</button>
     </div>
   </main>
+
+  <!-- Modal: Beğenenleri Gösteri -->
+  <div id="likes-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>❤️ Beğenenler</h2>
+        <button class="modal-close" onclick="document.getElementById('likes-modal').style.display = 'none'">✕</button>
+      </div>
+      <div class="modal-body" id="likes-modal-body">
+        <p style="text-align: center; color: #999;">Yükleniyor...</p>
+      </div>
+    </div>
+  </div>
 
   <!-- Load Navbar Module -->
   <script type="module" src="./js/components/navbar.js"></script>

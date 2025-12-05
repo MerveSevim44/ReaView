@@ -1075,10 +1075,8 @@
         // Tüm itemler için yorumları yükle (DB ve API)
         loadComments();
         
-        // DB items için puanları yükle
-        if (!isExternalItem) {
-          loadRatings();
-        }
+        // Tüm itemler için puanları yükle (DB ve API)
+        loadRatings();
       } catch (error) {
         console.error('❌ loadItemDetails Hatası:', error);
         document.getElementById('loading').style.display = 'none';
@@ -1233,28 +1231,32 @@
         console.log(`⭐ Puan kaydediliyor: ${rating}/10, itemId: ${itemId}, currentUser:`, currentUser);
         
         if (isExternalItem) {
-          // API item - API endpoint'ine gönder
-          let sourceId = currentItem.sourceId;
+          // API item - ratings endpoint'ine gönder (yeni endpoint)
+          let sourceId;
           
-          if (!sourceId) {
-            if (currentItem.source === 'tmdb') {
-              sourceId = `tmdb_${currentItem.id || currentItem.external_api_id}`;
-            } else if (currentItem.source === 'google_books') {
-              sourceId = `google_books_${currentItem.id || currentItem.external_api_id}`;
-            } else if (currentItem.source === 'openlib') {
-              sourceId = `openlib_${currentItem.id || currentItem.external_api_id}`;
-            }
+          if (currentItem.external_api_source && currentItem.external_api_id) {
+            sourceId = `${currentItem.external_api_source}_${currentItem.external_api_id}`;
+          } else if (currentItem.external_api_id) {
+            sourceId = `external_${currentItem.external_api_id}`;
+          } else {
+            console.error('❌ external_api_id bulunamadı:', currentItem);
+            alert('❌ API item bilgisi eksik');
+            return;
           }
           
-          console.log(`📤 API Puanı Kaydediliyor: ${sourceId} -> ${rating}/10`);
+          console.log(`📤 API Puanı Kaydediliyor (Ratings): ${sourceId} -> ${rating}/10`);
           
-          const response = await fetch(`${API_BASE}/items/api/comments/${sourceId}`, {
+          const response = await fetch(`${API_BASE}/items/api/rating/${sourceId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               user_id: currentUser.user_id,
-              review_text: `API puanı: ${rating}/10`,
-              rating: rating
+              rating: rating,
+              title: currentItem.title || "Unknown",
+              item_type: currentItem.item_type || "movie",
+              poster_url: currentItem.poster_url || "",
+              year: currentItem.year || null,
+              description: currentItem.description || ""
             })
           });
 
@@ -1264,10 +1266,26 @@
             alert(`✅ ${rating}/10 puan başarıyla kaydedildi!`);
             selectedRating = 0;
             initRatingInput();
-            setTimeout(() => loadItemDetails(), 500);
+            
+            // API item'ın güncel verilerini çek ve render et
+            try {
+              const sourceId = `${currentItem.external_api_source}_${currentItem.external_api_id}`;
+              const updatedResponse = await fetch(`${API_URL}/api/${sourceId}`);
+              if (updatedResponse.ok) {
+                const updatedItem = await updatedResponse.json();
+                console.log('✅ API Item güncel verisi yüklendi:', updatedItem);
+                currentItem = updatedItem;
+                renderItemDetail();
+                loadRatings();
+              }
+            } catch (updateErr) {
+              console.error('⚠️ API item güncellemesi başarısız, yeniden yükleniyor:', updateErr);
+              setTimeout(() => loadItemDetails(), 500);
+            }
           } else {
-            console.error('❌ API Puan kayıt hatası:', response.status);
-            alert('❌ Puan kaydedilirken hata oluştu');
+            const errorText = await response.text();
+            console.error('❌ API Puan kayıt hatası:', response.status, errorText);
+            alert(`❌ Puan kaydedilirken hata oluştu: ${response.status}`);
           }
         } else {
           // DB item - normal endpoint
@@ -1549,7 +1567,13 @@
           body: JSON.stringify({
             item_id: itemIdToAdd,
             source_id: sourceIdToAdd,
-            action: 'add'
+            action: 'add',
+            // API items için metadata ekle
+            title: currentItem.title,
+            item_type: currentItem.item_type || currentItem.type || 'movie',
+            poster_url: currentItem.poster_url || currentItem.posterUrl || currentItem.poster_path,
+            year: currentItem.year || currentItem.releaseDate?.split('-')[0] || currentItem.publishedDate?.split('-')[0],
+            description: currentItem.description || currentItem.overview || ''
           })
         });
         
@@ -1737,14 +1761,32 @@
 
     async function loadRatings() {
       try {
-        if (!currentItem.item_id) {
-          console.log('⚠️ item_id bulunamadı, ratings yüklenemedi');
-          renderRatings([]);
-          return;
+        let ratingsUrl;
+        
+        if (isExternalItem) {
+          // API item - source_id ile ratings çek
+          if (!currentItem.external_api_source || !currentItem.external_api_id) {
+            console.log('⚠️ API item bilgisi eksik, ratings yüklenemedi');
+            renderRatings([]);
+            return;
+          }
+          
+          const sourceId = `${currentItem.external_api_source}_${currentItem.external_api_id}`;
+          ratingsUrl = `${API_URL}/api/ratings/${sourceId}`;
+          console.log(`📥 API Puanları Çekiliyor: ${ratingsUrl}`);
+        } else {
+          // DB item - item_id ile ratings çek
+          if (!currentItem.item_id) {
+            console.log('⚠️ item_id bulunamadı, ratings yüklenemedi');
+            renderRatings([]);
+            return;
+          }
+          
+          ratingsUrl = `${API_URL}/${currentItem.item_id}/ratings`;
+          console.log(`📥 Puanları Çekiliyor: ${ratingsUrl}`);
         }
-
-        console.log(`📥 Puanları Çekiliyor: /items/${currentItem.item_id}/ratings`);
-        const response = await fetch(`${API_URL}/${currentItem.item_id}/ratings`);
+        
+        const response = await fetch(ratingsUrl);
         
         if (!response.ok) {
           console.error('❌ Puanlar Yanıt Hatası:', response.status);
@@ -1753,7 +1795,7 @@
         }
         
         const ratings = await response.json();
-        console.log(`✅ Puanlar (${currentItem.item_id}): ${ratings.length} bulundu`, ratings);
+        console.log(`✅ Puanlar: ${ratings.length} bulundu`, ratings);
         
         renderRatings(ratings);
       } catch (error) {
@@ -1861,7 +1903,13 @@
             body: JSON.stringify({
               user_id: currentUser.user_id,
               review_text: text,
-              rating: selectedRating || null
+              rating: selectedRating || null,
+              // API item metadata ekle
+              title: currentItem.title,
+              item_type: currentItem.item_type || currentItem.type || 'movie',
+              poster_url: currentItem.poster_url || currentItem.posterUrl || currentItem.poster_path,
+              year: currentItem.year || currentItem.releaseDate?.split('-')[0] || currentItem.publishedDate?.split('-')[0],
+              description: currentItem.description || currentItem.overview || ''
             })
           });
 

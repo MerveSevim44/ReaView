@@ -46,9 +46,24 @@ async function initializeFeed() {
 
     // "Daha Fazla Yükle" butonuna listener ekle
     loadMoreBtn.addEventListener("click", loadMoreActivities);
+
+    // Sonsuz kaydırma listener'ı ekle
+    window.addEventListener("scroll", handleInfiniteScroll);
   } catch (error) {
     console.error("Feed başlatma hatası:", error);
     feedContainer.innerHTML = `<div class="empty-state"><p>❌ Akış yüklenemedi: ${error.message}</p></div>`;
+  }
+}
+
+/**
+ * Sonsuz kaydırma - sayfanın sonuna gelinceyi yeni aktiviteler yükle
+ */
+function handleInfiniteScroll() {
+  if (isLoading || !hasMore) return;
+
+  // Sayfa sonuna 300px kala yükleyi başlat
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+    loadMoreActivities();
   }
 }
 
@@ -165,7 +180,7 @@ async function loadMoreActivities() {
 function renderActivityCard(activity) {
   const { activity_id, activity_type, created_at, user_id, username, avatar_url, 
            item_id, title, item_type, poster_url, year, review_text, rating_score, review_rating,
-           like_count = 0, comment_count = 0 } = activity;
+           review_id, like_count = 0, comment_count = 0, is_liked_by_user = 0, is_item_liked_by_user = 0 } = activity;
 
   const timestamp = formatRelativeTime(created_at);
   const displayName = username || `Kullanıcı #${user_id}`;
@@ -177,6 +192,16 @@ function renderActivityCard(activity) {
     actionText = "bir içeriğe puan verdi";
   } else if (activity_type === "review") {
     actionText = "bir yorum yaptı";
+  } else if (activity_type === "like_review") {
+    actionText = "bir yorumu beğendi";
+  } else if (activity_type === "like_item") {
+    actionText = "bir içeriği beğendi";
+  } else if (activity_type === "follow") {
+    actionText = "birini takip etmeye başladı";
+  } else if (activity_type === "comment_review") {
+    actionText = "bir yoruma yorum yaptı";
+  } else if (activity_type === "list_add") {
+    actionText = "bir liste oluşturdu";
   } else {
     actionText = "bir aktivite yaptı";
   }
@@ -188,14 +213,20 @@ function renderActivityCard(activity) {
     bodyHtml = renderRatingBody(title, item_type, poster_url, year, rating_score, item_id);
   } else if (activity_type === "review" && item_id) {
     // Review aktivitesi - review_text ve review_rating'i birlikte göster
-    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, activity_id, item_id);
+    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, review_id, item_id);
+  } else if (activity_type === "like_review") {
+    // Review beğenisi
+    bodyHtml = renderReviewBody(title, item_type, poster_url, review_text, review_rating, activity.review_id, item_id);
+  } else if (activity_type === "like_item" && item_id) {
+    // Item beğenisi
+    bodyHtml = renderRatingBody(title, item_type, poster_url, year, 0, item_id);
   } else {
-    bodyHtml = renderGenericBody(title);
+    bodyHtml = renderGenericBody(title || "Aktivite");
   }
 
   // Kart HTML'i
   return `
-    <div class="activity-card" data-activity-id="${activity_id}" data-activity-type="${activity_type}" data-item-id="${item_id}">
+    <div class="activity-card" data-activity-id="${activity_id}" data-activity-type="${activity_type}" data-item-id="${item_id}" data-review-id="${review_id || ''}">
       <!-- Header -->
       <div class="activity-header">
         <div class="activity-avatar">
@@ -213,11 +244,24 @@ function renderActivityCard(activity) {
 
       <!-- Footer -->
       <div class="activity-footer">
-        <button class="btn-action btn-like" title="Beğen">
-          <span class="like-icon">🤍</span>
-          <span class="like-count">${like_count}</span>
-        </button>
-        <button class="btn-action btn-comment" title="Yorum Yap">
+        ${(() => {
+          // Beğeni state'ini belirle
+          let isLiked = false;
+          if (activity_type === "review" || activity_type === "like_review") {
+            isLiked = is_liked_by_user === 1;
+          } else if (activity_type === "rating" || activity_type === "like_item") {
+            isLiked = is_item_liked_by_user === 1;
+          }
+          const likeIcon = isLiked ? "❤️" : "🤍";
+          const activeClass = isLiked ? "active" : "";
+          return `
+            <button class="btn-action btn-like ${activeClass}" title="Beğen" data-review-id="${review_id || ''}" data-item-id="${item_id || ''}">
+              <span class="like-icon">${likeIcon}</span>
+              <span class="like-count" style="cursor: pointer;" title="Beğenenleri görmek için tıkla">${like_count}</span>
+            </button>
+          `;
+        })()}
+        <button class="btn-action btn-comment" title="Yorum Yap" ${!review_id ? 'disabled' : ''}>
           <span class="comment-icon">💬</span>
           <span class="comment-count">${comment_count}</span>
         </button>
@@ -320,6 +364,17 @@ function bindActivityEvents() {
   feedContainer.querySelectorAll(".btn-like").forEach(btn => {
     if (!btn.dataset.listenerAttached) {
       btn.addEventListener("click", handleLike);
+      
+      // Like count'a tıklanırsa beğenenleri göster
+      const likeCount = btn.querySelector(".like-count");
+      likeCount.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const card = btn.closest(".activity-card");
+        const reviewId = btn.getAttribute("data-review-id");
+        const itemId = btn.getAttribute("data-item-id");
+        showLikesModal(card, reviewId || null, itemId || null);
+      });
+      
       btn.dataset.listenerAttached = "true";
     }
   });
@@ -356,11 +411,12 @@ function bindActivityEvents() {
     if (!card.dataset.dataLoaded) {
       const activityId = card.getAttribute("data-activity-id");
       const activityType = card.getAttribute("data-activity-type");
+      const reviewId = card.getAttribute("data-review-id");
       
       if (currentUser) {
         // Review'lar için yorumları yükle
-        if (activityType === "review") {
-          displayComments(card, activityId, currentUser.id);
+        if (activityType === "review" && reviewId) {
+          displayComments(card, reviewId, currentUser.id);
         }
       }
       
@@ -476,12 +532,49 @@ async function handleLike(e) {
     // UI güncelle
     if (result.action === "liked") {
       likeIcon.textContent = "❤️";
-      likeCount.textContent = parseInt(likeCount.textContent) + 1;
       btn.classList.add("active");
     } else if (result.action === "unliked") {
       likeIcon.textContent = "🤍";
-      likeCount.textContent = Math.max(0, parseInt(likeCount.textContent) - 1);
       btn.classList.remove("active");
+    }
+
+    // Güncel like count'ı getir
+    let getLikesEndpoint = "";
+    if (activityType === "review" || activityType === "like_review") {
+      getLikesEndpoint = `/likes/review/${activityId}/likes`;
+    } else if (activityType === "rating" || activityType === "like_item") {
+      getLikesEndpoint = `/likes/item/${itemId}/likes`;
+    }
+
+    if (getLikesEndpoint) {
+      try {
+        const likesResponse = await fetch(`http://127.0.0.1:8000${getLikesEndpoint}`, {
+          headers: {
+            "Authorization": `Bearer ${sessionManager.getToken()}`
+          }
+        });
+        
+        if (likesResponse.ok) {
+          const likesData = await likesResponse.json();
+          let newLikeCount = 0;
+          
+          if (typeof likesData === 'object') {
+            if (likesData.total_likes !== undefined) {
+              newLikeCount = likesData.total_likes;
+            } else if (likesData.count !== undefined) {
+              newLikeCount = likesData.count;
+            } else if (Array.isArray(likesData)) {
+              newLikeCount = likesData.length;
+            } else if (likesData.likes && Array.isArray(likesData.likes)) {
+              newLikeCount = likesData.likes.length;
+            }
+          }
+          
+          likeCount.textContent = newLikeCount;
+        }
+      } catch (err) {
+        console.warn("Like count güncelleme hatası:", err);
+      }
     }
 
     console.log(`✅ Beğeni işlemi: ${result.action}`);
@@ -517,10 +610,14 @@ async function handleComment(e) {
 
   try {
     let endpoint = "";
-    if (activityType === "review") {
-      endpoint = `/likes/review/${activityId}/comments`;
+    let reviewId = card.getAttribute("data-review-id");
+    
+    if (activityType === "review" && reviewId) {
+      endpoint = `/likes/review/${reviewId}/comments`;
+    } else if (activityType === "like_review" && reviewId) {
+      endpoint = `/likes/review/${reviewId}/comments`;
     } else {
-      console.warn("Bu aktivite türü yoruma desteklenmiyor");
+      console.warn("Bu aktivite türü yoruma desteklenmiyor veya review_id bulunamadı");
       return;
     }
 
@@ -549,7 +646,7 @@ async function handleComment(e) {
     btn.classList.add("active");
 
     // Yorumları getir ve göster
-    await displayComments(card, activityId, currentUser.id);
+    await displayComments(card, reviewId, currentUser.id);
 
     console.log(`✅ Yorum eklendi: ${result.comment_id}`);
   } catch (error) {
@@ -681,5 +778,71 @@ function handleShare(e) {
     navigator.clipboard.writeText(shareText).then(() => {
       alert("📋 Aktivite panoya kopyalandı!");
     }).catch(err => console.error("Kopy hatası:", err));
+  }
+}
+
+/**
+ * Beğenenleri modal'da göster
+ */
+async function showLikesModal(cardElement, reviewId = null, itemId = null) {
+  const modal = document.getElementById("likes-modal");
+  const modalBody = document.getElementById("likes-modal-body");
+  
+  if (!reviewId && !itemId) {
+    modalBody.innerHTML = '<p style="text-align: center; color: #999;">Beğeni bulunamadı</p>';
+    modal.style.display = "flex";
+    return;
+  }
+
+  try {
+    modalBody.innerHTML = '<p style="text-align: center; color: #999;">Yükleniyor...</p>';
+    modal.style.display = "flex";
+
+    let endpoint = "";
+    if (reviewId) {
+      endpoint = `/likes/review/${reviewId}/likes`;
+    } else if (itemId) {
+      endpoint = `/likes/item/${itemId}/likes`;
+    }
+
+    const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+      headers: {
+        "Authorization": `Bearer ${sessionManager.getToken()}`
+      }
+    });
+
+    if (!response.ok) throw new Error("Beğenenler yüklenemedi");
+
+    const data = await response.json();
+    let likes = [];
+    
+    // API response formatını handle et
+    if (Array.isArray(data)) {
+      likes = data;
+    } else if (data.likes && Array.isArray(data.likes)) {
+      likes = data.likes;
+    }
+
+    if (likes.length === 0) {
+      modalBody.innerHTML = '<p style="text-align: center; color: #999;">Henüz kimse beğenmedi</p>';
+      return;
+    }
+
+    // Beğenenler listesini render et
+    const likesHtml = likes.map(like => `
+      <div class="like-item">
+        <div class="like-item-avatar">
+          ${like.avatar_url ? `<img src="${like.avatar_url}" alt="${like.username}">` : '👤'}
+        </div>
+        <div class="like-item-info">
+          <a href="./profile.html?user=${like.user_id}" class="like-item-username">${like.username || `Kullanıcı #${like.user_id}`}</a>
+        </div>
+      </div>
+    `).join("");
+
+    modalBody.innerHTML = `<div class="likes-list">${likesHtml}</div>`;
+  } catch (error) {
+    console.error("Beğenenler yükleme hatası:", error);
+    modalBody.innerHTML = `<p style="text-align: center; color: #999;">Hata: ${error.message}</p>`;
   }
 }

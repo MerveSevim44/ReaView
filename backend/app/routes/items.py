@@ -3,9 +3,69 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, desc, func
 from ..database import get_db
 from .. import models, schemas
-from ..services.external_api import get_tmdb_reviews, get_google_books_reviews
+from ..services.external_api import get_tmdb_reviews, get_google_books_reviews, search_tmdb, search_google_books, search_openlibrary
+import requests
+import os
 
 router = APIRouter()
+
+
+def enrich_item_poster(item: models.Item, db: Session = None):
+    """
+    Item'ın poster_url'si boşsa external API'den çekmeye çalış ve database'ye kaydet
+    """
+    if item.poster_url:
+        return item.poster_url
+    
+    poster_url = None
+    
+    # Eğer TMDB ID varsa, TMDB'den çek
+    if item.external_api_id and item.external_api_source == 'tmdb':
+        try:
+            api_key = os.getenv("API_KEY")
+            if not api_key:
+                return None
+            url = f"https://api.themoviedb.org/3/movie/{item.external_api_id}"
+            r = requests.get(url, params={"api_key": api_key, "language": "tr-TR"}, timeout=3)
+            if r.status_code == 200:
+                data = r.json()
+                poster_path = data.get('poster_path')
+                if poster_path:
+                    poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
+        except Exception as e:
+            print(f"TMDB poster fetch hatası: {str(e)}")
+    
+    # Eğer başarısız ise ve item başlığı varsa, TMDB'de ara
+    if not poster_url and item.title:
+        try:
+            api_key = os.getenv("API_KEY")
+            if not api_key:
+                return None
+            
+            # Item başlığını ara
+            params = {"api_key": api_key, "query": item.title, "language": "tr-TR"}
+            r = requests.get(f"https://api.themoviedb.org/3/search/movie", params=params, timeout=3)
+            if r.status_code == 200:
+                results = r.json().get("results", [])
+                if results:
+                    # İlk sonucu al
+                    poster_path = results[0].get('poster_path')
+                    if poster_path:
+                        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
+        except Exception as e:
+            print(f"TMDB search poster fetch hatası: {str(e)}")
+    
+    # Eğer poster bulunduysa ve db var ise, database'ye kaydet
+    if poster_url and db:
+        try:
+            item.poster_url = poster_url
+            db.commit()
+            print(f"✅ Poster güncellendi: {item.title} -> {poster_url[:50]}...")
+        except Exception as e:
+            print(f"Database update hatası: {str(e)}")
+            db.rollback()
+    
+    return poster_url
 
 
 def calculate_hybrid_rating(item_id: int, item: models.Item, db: Session):
@@ -70,14 +130,15 @@ def calculate_hybrid_rating(item_id: int, item: models.Item, db: Session):
 # 1️⃣ SPECIAL ROUTES (Sabit route'lar BAŞTA)
 # ============================================
 
-# 🔍 Arama
+# 🔍 Arama (Database + External APIs)
 @router.get("/search", response_model=list[schemas.ItemOut])
 def search_items(
     q: str = Query(..., min_length=2, description="Arama metni"),
     item_type: str = Query(None, description="'book' veya 'movie'"),
     db: Session = Depends(get_db)
 ):
-    """İçerik ara (başlık/açıklama)"""
+    """İçerik ara (database + external APIs - film ve kitap)"""
+    # 1. Database'den ara
     query = db.query(models.Item)
     
     # Başlık veya açıklamada ara
@@ -90,10 +151,10 @@ def search_items(
     if item_type:
         query = query.filter(models.Item.item_type == item_type)
     
-    items = query.limit(20).all()
+    db_items = query.limit(20).all()
     
     result = []
-    for item in items:
+    for item in db_items:
         rating_info = calculate_hybrid_rating(item.item_id, item, db)
         item_dict = {
             "item_id": item.item_id,
@@ -114,10 +175,43 @@ def search_items(
         }
         result.append(item_dict)
     
-    return result
+    # 2. External APIs'den ara (eğer item_type belirtilmişse veya boşsa)
+    try:
+        if not item_type or item_type == "movie":
+            tmdb_results = search_tmdb(q)
+            if tmdb_results:
+                result.extend(tmdb_results[:10])
+        
+        if not item_type or item_type == "book":
+            try:
+                google_results = search_google_books(q)
+                if google_results:
+                    result.extend(google_results[:10])
+            except Exception:
+                try:
+                    openlib_results = search_openlibrary(q)
+                    if openlib_results:
+                        result.extend(openlib_results[:10])
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"External API arama hatası: {str(e)}")
+        # Hata olsa bile database sonuçlarını döndür
+        pass
+    
+    # 3. Duplikatları kaldır (aynı başlık)
+    seen_titles = set()
+    unique_results = []
+    for item in result:
+        title_lower = (item.get("title") or "").lower()
+        if title_lower not in seen_titles:
+            seen_titles.add(title_lower)
+            unique_results.append(item)
+    
+    return unique_results
 
 
-# 🔥 En Yüksek Puanlılar
+# 🔥 En Yüksek Puanlılar (Database + Popular External Items)
 @router.get("/featured/top-rated", response_model=list[schemas.ItemOut])
 def get_top_rated(limit: int = Query(6, ge=1, le=50), db: Session = Depends(get_db)):
     """En yüksek puanlı içerikleri getir (combined_rating'e göre sıralanmış)"""
@@ -131,19 +225,29 @@ def get_top_rated(limit: int = Query(6, ge=1, le=50), db: Session = Depends(get_
         combined = rating_info.get('combined_rating', 0)
         items_with_ratings.append((item, rating_info, combined))
     
-    # Combined rating'e göre sırala ve top N'i al
+    # Combined rating'e göre sırala
     items_with_ratings.sort(key=lambda x: x[2], reverse=True)
-    top_items = items_with_ratings[:limit]
+    
+    # Poster'u olan items'ları ön plana al
+    items_with_poster = [x for x in items_with_ratings if x[0].poster_url]
+    items_without_poster = [x for x in items_with_ratings if not x[0].poster_url]
+    prioritized_items = items_with_poster + items_without_poster
+    
+    # Top N'i al (eğer database'den yeterli veri varsa, tamamını kullantırmızdan al)
+    top_items = prioritized_items[:limit] if len(prioritized_items) >= limit else prioritized_items
     
     result = []
     for item, rating_info, _ in top_items:
+        # poster_url'si boşsa external API'den çekmeye çalış ve database'ye kaydet
+        poster_url = enrich_item_poster(item, db)
+        
         item_dict = {
             "item_id": item.item_id,
             "title": item.title,
             "description": item.description,
             "item_type": item.item_type,
             "year": item.year,
-            "poster_url": item.poster_url,
+            "poster_url": poster_url or item.poster_url,  # Çekilenini kullan, yoksa DB'deki kalır
             "external_api_id": item.external_api_id,
             "external_api_source": item.external_api_source,
             "genres": item.genres,
@@ -156,10 +260,30 @@ def get_top_rated(limit: int = Query(6, ge=1, le=50), db: Session = Depends(get_
         }
         result.append(item_dict)
     
-    return result
+    # Eğer database'den yeterli veri yoksa, external APIs'den popüler item'lar ekle
+    if len(result) < limit:
+        try:
+            # TMDB'den popüler filmler al
+            popular_movies = search_tmdb("popular")
+            if popular_movies:
+                # Poster'u olan filmler ön plana al
+                movies_with_poster = [m for m in popular_movies if m.get("poster_url")]
+                movies_without_poster = [m for m in popular_movies if not m.get("poster_url")]
+                sorted_movies = movies_with_poster + movies_without_poster
+                
+                for movie in sorted_movies[:(limit - len(result))]:
+                    # Zaten eklenmiş mi diye kontrol et
+                    if not any(item.get("title", "").lower() == movie.get("title", "").lower() for item in result):
+                        # ⚠️ Poster olmayan item'ları atla (vitrin'de boş poster görünmez)
+                        if movie.get("poster_url"):
+                            result.append(movie)
+        except Exception as e:
+            print(f"Popüler film yükleme hatası: {str(e)}")
+    
+    return result[:limit]
 
 
-# 👥 En Popülerler (En çok review alanlar + rating)
+# 👥 En Popülerler (Database + Popular External Items)
 @router.get("/featured/popular", response_model=list[schemas.ItemOut])
 def get_popular(limit: int = Query(6, ge=1, le=50), db: Session = Depends(get_db)):
     """En popüler içerikleri getir (review count'a göre, sonra rating'e göre sıralanmış)"""
@@ -182,19 +306,29 @@ def get_popular(limit: int = Query(6, ge=1, le=50), db: Session = Depends(get_db
         
         items_with_scores.append((item, rating_info, popularity_score, review_count))
     
-    # Popularity score'a göre sırala ve top N'i al
+    # Popularity score'a göre sırala
     items_with_scores.sort(key=lambda x: (x[2], x[3]), reverse=True)  # Score ve review count'a göre
-    top_items = items_with_scores[:limit]
+    
+    # Poster'u olan items'ları ön plana al
+    items_with_poster = [x for x in items_with_scores if x[0].poster_url]
+    items_without_poster = [x for x in items_with_scores if not x[0].poster_url]
+    prioritized_items = items_with_poster + items_without_poster
+    
+    # Top N'i al
+    top_items = prioritized_items[:limit]
     
     result = []
     for item, rating_info, _, _ in top_items:
+        # poster_url'si boşsa external API'den çekmeye çalış ve database'ye kaydet
+        poster_url = enrich_item_poster(item, db)
+        
         item_dict = {
             "item_id": item.item_id,
             "title": item.title,
             "description": item.description,
             "item_type": item.item_type,
             "year": item.year,
-            "poster_url": item.poster_url,
+            "poster_url": poster_url or item.poster_url,  # Çekilenini kullan, yoksa DB'deki kalır
             "external_api_id": item.external_api_id,
             "external_api_source": item.external_api_source,
             "genres": item.genres,
@@ -207,7 +341,45 @@ def get_popular(limit: int = Query(6, ge=1, le=50), db: Session = Depends(get_db
         }
         result.append(item_dict)
     
-    return result
+    # Eğer database'den yeterli veri yoksa, external APIs'den popüler item'lar ekle
+    if len(result) < limit:
+        try:
+            # TMDB'den popüler filmler al
+            popular_movies = search_tmdb("popular")
+            if popular_movies:
+                # Poster'u olan filmler ön plana al
+                movies_with_poster = [m for m in popular_movies if m.get("poster_url")]
+                movies_without_poster = [m for m in popular_movies if not m.get("poster_url")]
+                sorted_movies = movies_with_poster + movies_without_poster
+                
+                for movie in sorted_movies[:(limit - len(result))]:
+                    # Zaten eklenmiş mi diye kontrol et
+                    if not any(item.get("title", "").lower() == movie.get("title", "").lower() for item in result):
+                        # ⚠️ Poster olmayan item'ları atla (vitrin'de boş poster görünmez)
+                        if movie.get("poster_url"):
+                            result.append(movie)
+            
+            # Eğer hala yeterli veri yoksa kitap da ekle
+            if len(result) < limit:
+                try:
+                    popular_books = search_google_books("bestseller")
+                    if popular_books:
+                        # Poster'u olan kitaplar ön plana al
+                        books_with_poster = [b for b in popular_books if b.get("poster_url")]
+                        books_without_poster = [b for b in popular_books if not b.get("poster_url")]
+                        sorted_books = books_with_poster + books_without_poster
+                        
+                        for book in sorted_books[:(limit - len(result))]:
+                            if not any(item.get("title", "").lower() == book.get("title", "").lower() for item in result):
+                                # ⚠️ Poster olmayan item'ları atla
+                                if book.get("poster_url"):
+                                    result.append(book)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"Popüler içerik yükleme hatası: {str(e)}")
+    
+    return result[:limit]
 
 
 # 🎯 Gelişmiş Filtreleme
@@ -346,6 +518,68 @@ def get_item(item_id: int, db: Session = Depends(get_db)):
     return item_dict
 
 
+@router.get("/api/{source_id}")
+def get_api_item(source_id: str, db: Session = Depends(get_db)):
+    """API item'ın güncel bilgisini getir (ratings dahil)"""
+    try:
+        print(f"📥 API Item GET: {source_id}")
+        
+        # Parse source_id
+        external_api_source = "external"
+        external_api_id = source_id
+        
+        if "_" in source_id:
+            parts = source_id.split("_", 1)
+            external_api_source = parts[0]
+            external_api_id = parts[1]
+        
+        print(f"📊 Parsed: source={external_api_source}, api_id={external_api_id}")
+        
+        # API item'ı bul
+        item = db.query(models.Item).filter(
+            models.Item.external_api_id == external_api_id,
+            models.Item.external_api_source == external_api_source
+        ).first()
+        
+        if not item:
+            print(f"⚠️ API item bulunamadı: {external_api_source}_{external_api_id}")
+            raise HTTPException(status_code=404, detail="API item bulunamadı")
+        
+        print(f"✅ Item bulundu: item_id={item.item_id}")
+        
+        # Rating info'yu hesapla
+        rating_info = calculate_hybrid_rating(item.item_id, item, db)
+        
+        item_dict = {
+            "item_id": item.item_id,
+            "title": item.title,
+            "description": item.description,
+            "item_type": item.item_type,
+            "year": item.year,
+            "poster_url": item.poster_url,
+            "external_api_id": item.external_api_id,
+            "external_api_source": item.external_api_source,
+            "genres": item.genres,
+            "authors": item.authors,
+            "director": item.director,
+            "actors": item.actors,
+            "page_count": item.page_count,
+            "created_at": item.created_at,
+            **rating_info
+        }
+        
+        print(f"✅ API Item döndürülüyor: {item_dict}")
+        return item_dict
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ API Item GET Hatası: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"API item getirme hatası: {str(e)}")
+
+
 # ✏️ İçerik güncelle
 @router.put("/{item_id}", response_model=schemas.ItemOut)
 def update_item(item_id: int, item_update: schemas.ItemCreate, db: Session = Depends(get_db)):
@@ -456,8 +690,67 @@ def get_item_ratings(item_id: int, db: Session = Depends(get_db)):
     return result
 
 
-# 🗑️ Puanı sil
-@router.delete("/rating/{rating_id}")
+@router.get("/api/ratings/{source_id}")
+def get_api_item_ratings(source_id: str, db: Session = Depends(get_db)):
+    """API item'ın tüm puanlarını getir"""
+    try:
+        print(f"📥 API Ratings GET: {source_id}")
+        
+        # Parse source_id
+        external_api_source = "external"
+        external_api_id = source_id
+        
+        if "_" in source_id:
+            parts = source_id.split("_", 1)
+            external_api_source = parts[0]
+            external_api_id = parts[1]
+        
+        print(f"📊 Parsed: source={external_api_source}, api_id={external_api_id}")
+        
+        # API item'ı bul
+        item = db.query(models.Item).filter(
+            models.Item.external_api_id == external_api_id,
+            models.Item.external_api_source == external_api_source
+        ).first()
+        
+        if not item:
+            print(f"⚠️ API item bulunamadı: {external_api_source}_{external_api_id}")
+            return []
+        
+        print(f"✅ Item bulundu: item_id={item.item_id}")
+        
+        # Item'ın tüm puanlarını getir
+        ratings = db.query(models.Rating).filter(
+            models.Rating.item_id == item.item_id
+        ).order_by(models.Rating.created_at.desc()).all()
+        
+        print(f"📝 Ratings found: {len(ratings)}")
+        
+        # Add username and avatar to each rating
+        result = []
+        for rating in ratings:
+            user = db.query(models.User).filter(models.User.user_id == rating.user_id).first()
+            rating_dict = {
+                "rating_id": rating.rating_id,
+                "user_id": rating.user_id,
+                "username": user.username if user else f"User {rating.user_id}",
+                "avatar_url": user.avatar_url if user else None,
+                "item_id": rating.item_id,
+                "score": rating.score,
+                "created_at": rating.created_at.isoformat() if rating.created_at else None
+            }
+            result.append(rating_dict)
+        
+        return result
+    
+    except Exception as e:
+        print(f"❌ API Ratings GET Hatası: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
+
 def delete_rating(rating_id: int, db: Session = Depends(get_db)):
     """Puanı sil (sadece kendi puanını silebilir)"""
     try:
@@ -552,10 +845,23 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
     try:
         all_comments_list = []
         
+        # Parse source_id: "tmdb_1094473" → (api_source="tmdb", api_id="1094473")
+        external_api_source = "external"
+        external_api_id = source_id
+        
+        if "_" in source_id:
+            parts = source_id.split("_", 1)
+            external_api_source = parts[0]  # "tmdb", "google_books", etc
+            external_api_id = parts[1]  # "1094473", "xyz", etc
+        
+        print(f"📊 GET API Comments - source_id={source_id}, api_source={external_api_source}, api_id={external_api_id}")
+        
         # 1. Veritabanından source_id ile yorumları getir
         db_comments = db.query(models.Review).filter(
             models.Review.source_id == source_id
         ).order_by(models.Review.created_at.desc()).all()
+        
+        print(f"📝 DB Comments found: {len(db_comments)}")
         
         for review in db_comments:
             user = db.query(models.User).filter(models.User.user_id == review.user_id).first()
@@ -571,16 +877,21 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
             })
         
         # 2. Eğer bu item database'e import edildiyse, o item'ın yorumlarını da getir
-        # source_id'den item'ı bulalım
+        # API source ve ID'ye göre item bul
         imported_item = db.query(models.Item).filter(
-            models.Item.external_api_id == source_id
+            models.Item.external_api_id == external_api_id,
+            models.Item.external_api_source == external_api_source
         ).first()
+        
+        print(f"📌 Imported item found: {imported_item is not None} - source={external_api_source}, id={external_api_id}")
         
         if imported_item:
             # Bu item'ın tüm yorumlarını getir (ratings dahil)
             item_reviews = db.query(models.Review).filter(
                 models.Review.item_id == imported_item.item_id
             ).order_by(models.Review.created_at.desc()).all()
+            
+            print(f"📝 Item reviews found: {len(item_reviews)}")
             
             for review in item_reviews:
                 user = db.query(models.User).filter(models.User.user_id == review.user_id).first()
@@ -595,22 +906,19 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
                     "source": "user_rating"
                 })
         
-        # 3. source_id'yi parse et: "tmdb_550" → ("tmdb", "550")
-        parts = source_id.rsplit('_', 1)
-        if len(parts) == 2:
-            source_type, api_id = parts
-            api_comments = []
-            
-            # TMDB film yorumlarını çek
-            if source_type == "tmdb":
-                api_comments = get_tmdb_reviews(api_id)
-            
-            # Google Books kitap yorumlarını çek
-            elif source_type == "google_books":
-                api_comments = get_google_books_reviews(api_id)
-            
-            # API yorumlarını ekle
-            all_comments_list.extend(api_comments)
+        # 3. API yorumlarını çek
+        api_comments = []
+        
+        # TMDB film yorumlarını çek
+        if external_api_source == "tmdb":
+            api_comments = get_tmdb_reviews(external_api_id)
+        
+        # Google Books kitap yorumlarını çek
+        elif external_api_source == "google_books":
+            api_comments = get_google_books_reviews(external_api_id)
+        
+        # API yorumlarını ekle
+        all_comments_list.extend(api_comments)
         
         # Duplikatları kaldır (aynı user ve text olanlar)
         seen = set()
@@ -620,6 +928,8 @@ def get_api_comments(source_id: str, db: Session = Depends(get_db)):
             if key not in seen:
                 seen.add(key)
                 unique_comments.append(comment)
+        
+        print(f"✅ Total comments returned: {len(unique_comments)}")
         
         return {
             "success": True,
@@ -660,9 +970,23 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
         if not review_text:
             raise HTTPException(status_code=400, detail="review_text gerekli")
         
+        # source_id format: "tmdb_1094473" veya "google_books_xyz"
+        # external_api_id'yi extract et
+        external_api_id = source_id
+        external_api_source = "external"
+        
+        if "_" in source_id:
+            parts = source_id.split("_", 1)
+            external_api_source = parts[0]  # "tmdb", "google_books", etc
+            external_api_id = parts[1]  # "1094473", "xyz", etc
+        
+        print(f"📊 Parsed source_id: source_id={source_id}, api_source={external_api_source}, api_id={external_api_id}")
+        
         # API item'ı DB'ye kaydet (varsa skip et)
+        # Arama kriterleri: external_api_id ve external_api_source
         existing_item = db.query(models.Item).filter(
-            models.Item.external_api_id == source_id
+            models.Item.external_api_id == external_api_id,
+            models.Item.external_api_source == external_api_source
         ).first()
         
         if not existing_item:
@@ -672,15 +996,17 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
                 year=year,
                 description=description,
                 poster_url=poster_url,
-                external_api_id=source_id,
-                external_api_source="external",
+                external_api_id=external_api_id,
+                external_api_source=external_api_source,
                 external_rating=0
             )
             db.add(new_item)
             db.flush()
             item_id = new_item.item_id
+            print(f"✅ Yeni API item oluşturuldu: {external_api_source}_{external_api_id} -> item_id: {item_id}")
         else:
             item_id = existing_item.item_id
+            print(f"✅ Mevcut API item bulundu: {external_api_source}_{external_api_id} -> item_id: {item_id}")
         
         # Find the next available review_id (reuse deleted IDs)
         existing_ids_query = db.query(models.Review.review_id).all()
@@ -846,6 +1172,145 @@ def rate_item(item_id: int, rating_data: dict, db: Session = Depends(get_db)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Puan kaydı hatası: {str(e)}")
+
+
+@router.post("/api/rating/{source_id}")
+def rate_api_item(source_id: str, rating_data: dict = Body(...), db: Session = Depends(get_db)):
+    """
+    API items (TMDB/Google Books) için puan ver (1-10)
+    Ratings tablosuna kaydedilir
+    source_id: "tmdb_1094473" formatında
+    """
+    try:
+        print(f"\n🔴 ====== API RATING REQUEST BAŞLADI ======")
+        print(f"📍 source_id: {source_id}")
+        print(f"📍 rating_data: {rating_data}")
+        
+        # Parse source_id
+        external_api_source = "external"
+        external_api_id = source_id
+        
+        if "_" in source_id:
+            parts = source_id.split("_", 1)
+            external_api_source = parts[0]
+            external_api_id = parts[1]
+        
+        print(f"📊 Parsed: source={external_api_source}, api_id={external_api_id}")
+        
+        # Girdileri kontrol et
+        if "rating" not in rating_data:
+            raise HTTPException(status_code=400, detail="Rating alanı gerekli")
+        
+        rating = rating_data.get("rating")
+        if not isinstance(rating, (int, float)) or rating < 1 or rating > 10:
+            raise HTTPException(status_code=400, detail="Puan 1-10 arasında olmalı")
+        
+        user_id = rating_data.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Kullanıcı ID gerekli")
+        
+        # API item'ı DB'ye kaydet (varsa skip et)
+        existing_item = db.query(models.Item).filter(
+            models.Item.external_api_id == external_api_id,
+            models.Item.external_api_source == external_api_source
+        ).first()
+        
+        if not existing_item:
+            # Gerekli alanları al
+            title = rating_data.get("title", "Unknown")
+            item_type = rating_data.get("item_type", "movie")
+            poster_url = rating_data.get("poster_url", "")
+            year = rating_data.get("year")
+            description = rating_data.get("description", "")
+            
+            new_item = models.Item(
+                title=title,
+                item_type=item_type,
+                year=year,
+                description=description,
+                poster_url=poster_url,
+                external_api_id=external_api_id,
+                external_api_source=external_api_source,
+                external_rating=0
+            )
+            db.add(new_item)
+            db.flush()
+            item_id = new_item.item_id
+            print(f"✅ Yeni API item oluşturuldu: {external_api_source}_{external_api_id} -> item_id: {item_id}")
+        else:
+            item_id = existing_item.item_id
+            print(f"✅ Mevcut API item bulundu: item_id={item_id}")
+        
+        # Kullanıcının bu item için zaten puanı var mı?
+        existing_rating = db.query(models.Rating).filter(
+            models.Rating.item_id == item_id,
+            models.Rating.user_id == user_id
+        ).first()
+        
+        if existing_rating:
+            # Varsa güncelle
+            print(f"📝 Puan güncellenyor: rating_id={existing_rating.rating_id}")
+            existing_rating.score = rating
+            db.commit()
+            db.refresh(existing_rating)
+            
+            return {
+                "success": True,
+                "message": "Puan güncellendi",
+                "rating_id": existing_rating.rating_id,
+                "item_id": item_id,
+                "score": existing_rating.score
+            }
+        else:
+            # Yoksa yarat - gap-filling
+            print(f"➕ Yeni puan oluşturuluyor")
+            
+            existing_ids_query = db.query(models.Rating.rating_id).all()
+            existing_ids = {row[0] for row in existing_ids_query}
+            
+            next_id = 1
+            while next_id in existing_ids:
+                next_id += 1
+            
+            new_rating = models.Rating(
+                rating_id=next_id,
+                user_id=user_id,
+                item_id=item_id,
+                score=rating
+            )
+            
+            db.add(new_rating)
+            db.flush()
+            
+            # Activity kaydı oluştur
+            activity = models.Activity(
+                user_id=user_id,
+                activity_type="rating",
+                item_id=item_id
+            )
+            db.add(activity)
+            db.commit()
+            db.refresh(new_rating)
+            
+            print(f"✅ Yeni puan oluşturuldu: rating_id={new_rating.rating_id}, score={new_rating.score}")
+            
+            return {
+                "success": True,
+                "message": "Puan kaydedildi",
+                "rating_id": new_rating.rating_id,
+                "item_id": item_id,
+                "score": new_rating.score
+            }
+    
+    except HTTPException as he:
+        print(f"❌ HTTPException: {he.detail}")
+        raise he
+    except Exception as e:
+        db.rollback()
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"API puan kaydı hatası: {str(e)}")
 
 
 # ============ KÜTÜPHANE: İçeriği listeye ekle/çıkar ============
@@ -1221,6 +1686,18 @@ def add_api_item_to_library(source_id: str, data: dict = Body(...), db: Session 
         if not user_id or not status or not source_id:
             raise HTTPException(status_code=400, detail="user_id, status ve source_id gerekli")
         
+        # Ensure title is not empty - if empty, try to fetch from TMDB/API
+        if not title or title.strip() == "":
+            # Try to get from existing item or fetch from external API
+            existing_item_check = db.query(models.Item).filter(
+                models.Item.external_api_id == source_id
+            ).first()
+            if existing_item_check and existing_item_check.title:
+                title = existing_item_check.title
+            else:
+                # Fallback: If still empty, set to Unknown with source_id
+                title = f"Unknown ({source_id})"
+        
         # Status validation
         valid_statuses = ['read', 'toread', 'watched', 'towatch']
         if status not in valid_statuses:
@@ -1231,6 +1708,10 @@ def add_api_item_to_library(source_id: str, data: dict = Body(...), db: Session 
             existing_item = db.query(models.Item).filter(
                 models.Item.external_api_id == source_id
             ).first()
+            
+            # Ensure title is not empty
+            if not title or title.strip() == "":
+                title = "Unknown"
             
             # If not exists, create it automatically
             if not existing_item:
