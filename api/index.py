@@ -1,13 +1,20 @@
 """
 Vercel serverless function entry point for FastAPI app
 """
+import sys
+from pathlib import Path
+
+# Add the project root to Python path
+root_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(root_dir))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from backend.app.routes import auth, items, reviews, feed, users, external, follows, likes
-from backend.app.database import init_db
-from pathlib import Path
 import os
+
+# Import app components
+from backend.app.routes import auth, items, reviews, feed, users, external, follows, likes, ratings, lists, comments
 
 app = FastAPI(title="ReaView API")
 
@@ -20,26 +27,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Skip database initialization in serverless - migrations should be pre-run
 # Initialize database on startup (only once in serverless)
-# Note: init_db with migrations might not work well in serverless
-# Consider using a proper migration tool or pre-migrated database
 @app.on_event("startup")
 def startup_event():
-    # For serverless, you may want to skip migrations
-    # and ensure your database is already migrated
-    try:
-        init_db()
-        print("[OK] Application started")
-    except Exception as e:
-        print(f"[WARNING] Could not run migrations in serverless: {e}")
+    print("[OK] Application started on Vercel")
+    # Skip migrations in serverless environment
+    # Ensure your database is already migrated before deployment
 
-# Mount avatars directory as static files
+# Mount avatars directory as static files (if exists)
 avatars_dir = Path(__file__).parent.parent / "backend" / "avatars"
 if avatars_dir.exists():
-    app.mount("/avatars", StaticFiles(directory=str(avatars_dir)), name="avatars")
+    try:
+        app.mount("/avatars", StaticFiles(directory=str(avatars_dir)), name="avatars")
+    except Exception as e:
+        print(f"[WARNING] Could not mount avatars directory: {e}")
 
 # Include routers from route modules
-for module, prefix, tag in (
+routers_config = [
     (auth, "/auth", "Auth"),
     (items, "/items", "Items"),
     (reviews, "/reviews", "Reviews"),
@@ -48,11 +53,17 @@ for module, prefix, tag in (
     (external, "/external", "External API"),
     (follows, "/users", "Follow System"),
     (likes, "/likes", "Likes"),
-):
-    if hasattr(module, "router"):
-        app.include_router(module.router, prefix=prefix, tags=[tag])
-    else:
-        raise AttributeError(f"module {module.__name__} does not define 'router'")
+    (ratings, "/ratings", "Ratings"),
+    (lists, "/lists", "Lists"),
+    (comments, "/comments", "Comments"),
+]
+
+for module, prefix, tag in routers_config:
+    try:
+        if hasattr(module, "router"):
+            app.include_router(module.router, prefix=prefix, tags=[tag])
+    except Exception as e:
+        print(f"[WARNING] Could not load router {tag}: {e}")
 
 # Health check endpoint
 @app.get("/")
@@ -61,4 +72,4 @@ def health_check():
     return {"status": "[OK] ReaView API is running on Vercel"}
 
 # Export the app for Vercel
-handler = app
+app = app
