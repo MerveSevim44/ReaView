@@ -4,7 +4,7 @@
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: "https://rea-view.vercel.app/",
+  BASE_URL: "https://rea-view.vercel.app",
   TIMEOUT: 30000,
   HEADERS: {
     "Content-Type": "application/json"
