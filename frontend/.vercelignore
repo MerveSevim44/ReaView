@@ -1,0 +1,6 @@
+# Frontend Deployment
+node_modules/
+.env
+.git/
+*.log
+.DS_Store

@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "name": "reaview-frontend",
+  "buildCommand": null,
+  "outputDirectory": "frontend",
+  "framework": null,
+  "installCommand": null,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
+    }
+  ]
+}
