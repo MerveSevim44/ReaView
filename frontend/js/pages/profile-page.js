@@ -16,7 +16,7 @@ import { getQueryParam } from "../utils/helpers.js";
 import { Loader, showSuccess, showErrorToast } from "../components/loader.js";
 
 // API Base URL
-const API_BASE = "http://rea-view.vercel.app";
+const API_BASE = "https://reaview.vercel.app";
 
 // Current logged-in user
 const currentUserId = sessionManager.getCurrentUserId();
@@ -416,7 +416,7 @@ async function handleFollowClick(e) {
 async function loadLibrary() {
   try {
     // Fetch user library
-    const API_BASE = "http://rea-view.vercel.app";
+    const API_BASE = "https://reaview.vercel.app";
     const url1 = `${API_BASE}/items/library/${profileUserId}`;
     console.log(`📡 Kütüphane yükleniyor: ${url1}`);
     
@@ -558,7 +558,7 @@ async function loadCustomLists() {
     }
 
     // Fetch custom lists - current_user_id artık token'dan alınıyor
-    const API_BASE = "http://rea-view.vercel.app";
+    const API_BASE = "https://reaview.vercel.app";
     const url2 = `${API_BASE}/items/custom-lists/${profileUserId}`;
     console.log(`📡 Özel Listeler yükleniyor: ${url2}`);
     
@@ -658,7 +658,7 @@ function setupLibraryTabs() {
       } else {
         // Otherwise fetch for this specific status
         try {
-          const API_BASE = "http://rea-view.vercel.app";
+          const API_BASE = "https://reaview.vercel.app";
           const url3 = `${API_BASE}/items/library/${profileUserId}?status=${status}`;
           console.log(`📡 Kütüphane sekmesi yükleniyor (${status}): ${url3}`);
           

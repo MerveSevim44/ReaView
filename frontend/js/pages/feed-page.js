@@ -480,7 +480,7 @@ async function updateLikeCount(card, id, type) {
 
     if (!endpoint) return;
 
-    const response = await fetch(`http://rea-view.vercel.app${endpoint}`, {
+    const response = await fetch(`https://reaview.vercel.app${endpoint}`, {
       headers: {
         "Authorization": `Bearer ${sessionManager.getToken()}`
       }
@@ -555,7 +555,7 @@ async function handleLike(e) {
     }
 
     // API'ye beğeni isteğini gönder
-    const response = await fetch(`http://rea-view.vercel.app${endpoint}`, {
+    const response = await fetch(`https://reaview.vercel.app${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -589,7 +589,7 @@ async function handleLike(e) {
 
     if (getLikesEndpoint) {
       try {
-        const likesResponse = await fetch(`http://rea-view.vercel.app${getLikesEndpoint}`, {
+        const likesResponse = await fetch(`https://reaview.vercel.app${getLikesEndpoint}`, {
           headers: {
             "Authorization": `Bearer ${sessionManager.getToken()}`
           }
@@ -663,7 +663,7 @@ async function handleComment(e) {
     }
 
     // API'ye yorum isteğini gönder
-    const response = await fetch(`http://rea-view.vercel.app${endpoint}`, {
+    const response = await fetch(`https://reaview.vercel.app${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -708,7 +708,7 @@ async function displayComments(card, reviewId, currentUserId) {
     }
 
     // API'den yorumları getir
-    const response = await fetch(`http://rea-view.vercel.app/likes/review/${reviewId}/comments`, {
+    const response = await fetch(`https://reaview.vercel.app/likes/review/${reviewId}/comments`, {
       headers: {
         "Authorization": `Bearer ${sessionManager.getToken()}`
       }
@@ -774,7 +774,7 @@ window.deleteComment = async function(commentId, reviewId) {
   const currentUser = sessionManager.getCurrentUser();
 
   try {
-    const response = await fetch(`http://rea-view.vercel.app/likes/review-comments/${commentId}`, {
+    const response = await fetch(`https://reaview.vercel.app/likes/review-comments/${commentId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -846,7 +846,7 @@ async function showLikesModal(cardElement, reviewId = null, itemId = null) {
       endpoint = `/likes/item/${itemId}/likes`;
     }
 
-    const response = await fetch(`http://rea-view.vercel.app${endpoint}`, {
+    const response = await fetch(`https://reaview.vercel.app${endpoint}`, {
       headers: {
         "Authorization": `Bearer ${sessionManager.getToken()}`
       }

@@ -54,7 +54,7 @@ resetForm?.addEventListener("submit", async (e) => {
   successDiv.style.display = "none";
 
   try {
-    const response = await fetch("http://rea-view.vercel.app/auth/reset-password", {
+    const response = await fetch("https://reaview.vercel.app/auth/reset-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

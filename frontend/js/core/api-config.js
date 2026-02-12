@@ -5,7 +5,7 @@
 const API_CONFIG = {
   // Change this to your Vercel backend URL after deployment
   // Example: 'https://rea-view.vercel.app' or 'https://your-backend.vercel.app'
-  BASE_URL: 'https://rea-view.vercel.app',
+  BASE_URL: 'https://reaview.vercel.app',
   
   // Alternative: Use environment-based URL
   // BASE_URL: window.location.hostname === 'localhost' 
