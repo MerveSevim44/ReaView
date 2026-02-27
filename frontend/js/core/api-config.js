@@ -1,19 +1,11 @@
 // API Configuration for ReaView Frontend
 // This file centralizes all API endpoint configurations
-// Update API_BASE_URL to point to your deployed backend
+// Update API_BASE_URL in ./env.js to change the backend URL
+
+import { API_BASE_URL } from "./env.js";
 
 const API_CONFIG = {
-  // Change this to your Vercel backend URL after deployment
-  // Example: 'https://rea-view.vercel.app' or 'https://your-backend.vercel.app'
-  BASE_URL: 'https://reaview.vercel.app',
-  
-  // Alternative: Use environment-based URL
-  // BASE_URL: window.location.hostname === 'localhost' 
-  //   ? 'http://localhost:8000' 
-  //   : 'https://rea-view.vercel.app'
+  BASE_URL: API_BASE_URL
 };
 
-// Export for use in other files
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = API_CONFIG;
-}
+export { API_CONFIG };

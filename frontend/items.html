@@ -986,8 +986,8 @@
     </div>
   </div>
 
-  <script>
-    const API_BASE = "https://reaview.vercel.app";
+  <script type="module">
+    import { API_BASE_URL as API_BASE } from './js/core/env.js';
     const API_URL = `${API_BASE}/items`;
 
     let currentItem = null;
@@ -2041,6 +2041,22 @@
       }
       loadItemDetails();
     });
+
+    // Expose functions for inline onclick handlers (required for module scope)
+    window.closeListModal = closeListModal;
+    window.cancelNewList = cancelNewList;
+    window.createNewList = createNewList;
+    window.submitRating = submitRating;
+    window.toggleLibrary = toggleLibrary;
+    window.addCustomList = addCustomList;
+    window.submitComment = submitComment;
+    window.addItemToList = addItemToList;
+    window.deleteCustomList = deleteCustomList;
+    window.changeListSort = changeListSort;
+    window.showNewListForm = showNewListForm;
+    window.editComment = editComment;
+    window.deleteComment = deleteComment;
+    window.deleteRating = deleteRating;
   </script>
 </body>
 </html>

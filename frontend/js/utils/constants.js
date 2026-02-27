@@ -2,9 +2,11 @@
  * Global Constants and Configuration
  */
 
+import { API_BASE_URL } from "../core/env.js";
+
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: "https://reaview.vercel.app",
+  BASE_URL: API_BASE_URL,
   TIMEOUT: 30000,
   HEADERS: {
     "Content-Type": "application/json"

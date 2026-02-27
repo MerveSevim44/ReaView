@@ -3,6 +3,7 @@
  */
 
 import { sessionManager } from "../core/session-manager.js";
+import { API_BASE_URL } from "../core/env.js";
 
 // Giriş yapılıysa, feed'e yönlendir
 if (sessionManager.isLoggedIn()) {
@@ -30,7 +31,7 @@ forgotForm?.addEventListener("submit", async (e) => {
   successDiv.style.display = "none";
 
   try {
-    const response = await fetch("https://reaview.vercel.app/auth/forgot-password", {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),

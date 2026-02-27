@@ -54,13 +54,13 @@ htmlcov/
 .pyre/
 
 # Environments
-venv/
-ENV/
-env/
-.env
-.venv/
-env.bak/
-venv.bak/
+# venv/
+# ENV/
+# env/
+# .env
+# .venv/
+# env.bak/
+# venv.bak/
 
 # VS Code
 .vscode/
