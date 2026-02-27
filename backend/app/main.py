@@ -14,7 +14,7 @@ app = FastAPI(title="ReaView API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://reaview.vercel.app",
+        "https://rea-view.vercel.app",
         "http://localhost:8080",
         "http://localhost:3000",
         "http://127.0.0.1:8080",

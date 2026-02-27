@@ -7,4 +7,4 @@
  * To change the backend URL, update API_BASE_URL below.
  */
 
-export const API_BASE_URL = "https://rea-view.vercel.app/";
+export const API_BASE_URL = "https://rea-view.vercel.app";
