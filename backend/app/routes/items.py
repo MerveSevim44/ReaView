@@ -774,6 +774,16 @@ def delete_rating(rating_id: int, db: Session = Depends(get_db)):
 @router.post("/{item_id}/comments", response_model=schemas.ReviewOut)
 def add_comment(item_id: int, review: schemas.ReviewCreate, db: Session = Depends(get_db)):
     """İçeriğe yeni yorum ekle"""
+    # Self-heal: keep the PK sequence in sync to avoid duplicate-key errors
+    try:
+        db.execute(text("""
+            SELECT setval('reviews_review_id_seq',
+                          COALESCE((SELECT MAX(review_id) FROM reviews), 0) + 1, false);
+        """))
+        db.commit()
+    except Exception:
+        db.rollback()
+
     # Check if item exists
     item = db.query(models.Item).filter(models.Item.item_id == item_id).first()
     if not item:
@@ -990,7 +1000,21 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
     """
     try:
         print(f"📝 API Comment POST: {source_id}, Data: {comment}")
-        
+
+        # Self-heal: ensure PK sequences are in sync before inserting.
+        # Prevents "duplicate key value violates unique constraint reviews_pkey"
+        # if migration 031 hasn't been applied or rows have been deleted.
+        try:
+            db.execute(text("""
+                SELECT setval('reviews_review_id_seq',
+                              COALESCE((SELECT MAX(review_id) FROM reviews), 0) + 1, false);
+                SELECT setval('ratings_rating_id_seq',
+                              COALESCE((SELECT MAX(rating_id) FROM ratings), 0) + 1, false);
+            """))
+            db.commit()
+        except Exception:
+            db.rollback()
+
         user_id = comment.get("user_id")
         review_text = comment.get("review_text")
         rating = comment.get("rating")
@@ -999,7 +1023,7 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
         poster_url = comment.get("poster_url", "")
         year = comment.get("year")
         description = comment.get("description", "")
-        
+
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id gerekli")
         if not review_text:

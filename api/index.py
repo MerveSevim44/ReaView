@@ -15,6 +15,7 @@ import os
 
 # Import app components
 from backend.app.routes import auth, items, reviews, feed, users, external, follows, likes, ratings, lists, comments
+from backend.app.database import init_db
 
 app = FastAPI(title="ReaView API")
 
@@ -27,13 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Skip database initialization in serverless - migrations should be pre-run
-# Initialize database on startup (only once in serverless)
+# Run pending migrations (e.g., sequence resets) on every cold start.
+# All SQL migrations are idempotent (use IF EXISTS / OR REPLACE patterns).
 @app.on_event("startup")
 def startup_event():
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[WARNING] DB init failed (continuing): {e}")
     print("[OK] Application started on Vercel")
-    # Skip migrations in serverless environment
-    # Ensure your database is already migrated before deployment
 
 # Mount avatars directory as static files (if exists)
 avatars_dir = Path(__file__).parent.parent / "backend" / "avatars"

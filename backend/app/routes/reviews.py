@@ -37,6 +37,16 @@ def get_reviews_for_item(item_id: int, db: Session = Depends(get_db)):
 # Yeni yorum oluştur
 @router.post("/", response_model=schemas.ReviewOut)
 def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
+    # Self-heal: keep the PK sequence in sync to avoid duplicate-key errors
+    try:
+        db.execute(text("""
+            SELECT setval('reviews_review_id_seq',
+                          COALESCE((SELECT MAX(review_id) FROM reviews), 0) + 1, false);
+        """))
+        db.commit()
+    except Exception:
+        db.rollback()
+
     # Create review - let PostgreSQL auto-generate review_id
     new_review = models.Review(
         user_id=review.user_id,
