@@ -11,9 +11,11 @@ import { getUserInitials } from "../utils/formatters.js";
  * Initialize navbar
  */
 export function initializeNavbar() {
-  // Don't show navbar on login and register pages
+  // Don't show navbar on auth pages (login, register, forgot-password, reset-password)
   const currentPage = window.location.pathname.split("/").pop() || "";
-  if (currentPage === "login.html" || currentPage === "register.html") {
+  const authPages = ["login.html", "register.html", "forgot-password.html", "reset-password.html",
+                     "login", "register", "forgot-password", "reset-password"];
+  if (authPages.includes(currentPage)) {
     return;
   }
 

@@ -1661,21 +1661,25 @@ def get_custom_lists(
                 ).first()
                 is_follower = follow_record is not None
             
-            # Privacy_level'e göre filtrele - null check ekle
-            if is_follower:
-                # Takipçi ise: followers (1) ve public (2) listeleri göster
-                lists = db.query(models.CustomList).filter(
-                    models.CustomList.user_id == user_id,
-                    models.CustomList.privacy_level != None,
-                    models.CustomList.privacy_level.in_([1, 2])
-                ).all()
-            else:
-                # Takipçi değil ise: sadece public (2) listeleri göster
-                lists = db.query(models.CustomList).filter(
-                    models.CustomList.user_id == user_id,
-                    models.CustomList.privacy_level != None,
-                    models.CustomList.privacy_level == 2
-                ).all()
+            # Tüm kullanıcı listelerini çek ve Python tarafında filtrele
+            # (privacy_level NULL olabilir - SQLAlchemy NULL karşılaştırma sorunlarını önler)
+            all_lists = db.query(models.CustomList).filter(
+                models.CustomList.user_id == user_id
+            ).all()
+            
+            lists = []
+            for lst in all_lists:
+                # privacy_level None ise private (0) olarak değerlendir
+                pl = lst.privacy_level if lst.privacy_level is not None else 0
+                
+                if is_follower:
+                    # Takipçi ise: followers (1) ve public (2) listeleri göster
+                    if pl in [1, 2]:
+                        lists.append(lst)
+                else:
+                    # Takipçi değil ise: sadece public (2) listeleri göster
+                    if pl == 2:
+                        lists.append(lst)
         
         custom_lists = []
         for lst in lists:

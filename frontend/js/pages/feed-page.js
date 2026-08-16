@@ -14,6 +14,14 @@ import { sessionManager } from "../core/session-manager.js";
 import { formatRelativeTime } from "../utils/formatters.js";
 import { API_BASE_URL } from "../core/env.js";
 
+/**
+ * HTTP URL'lerini HTTPS'e dönüştür (Mixed Content önleme)
+ */
+function ensureHttps(url) {
+  if (!url || typeof url !== 'string') return url;
+  return url.replace(/^http:\/\//i, 'https://');
+}
+
 // DOM References
 const feedContainer = document.getElementById("feed-container");
 const loadMoreContainer = document.getElementById("load-more-container");
@@ -192,10 +200,14 @@ function renderActivityCard(activity) {
   // Title'ı güvenli hale getir - empty ise fallback göster
   const displayTitle = title && title.trim() !== '' ? title : 'İçerik';
 
-  // Debug: Check if poster_url is missing
-  if (!poster_url || poster_url.trim() === '') {
+  // Debug: Check if poster_url is missing (poster gerektiren türlerde)
+  const posterRequiredTypes = ['rating', 'review', 'like_review', 'like_item'];
+  if (posterRequiredTypes.includes(activity_type) && (!poster_url || poster_url.trim() === '')) {
     console.warn(`⚠️ POSTER EXSİK: "${displayTitle}" (activity_id: ${activity_id}, item_id: ${item_id}, type: ${activity_type})`);
   }
+
+  // HTTP → HTTPS dönüşümü (Mixed Content önleme)
+  const safePosterUrl = ensureHttps(poster_url);
 
   // Aksiyon metni
   let actionText = "";
@@ -222,16 +234,16 @@ function renderActivityCard(activity) {
   let bodyHtml = "";
   if (activity_type === "rating" && item_id) {
     // Rating aktivitesi - rating_score kullan
-    bodyHtml = renderRatingBody(displayTitle, item_type, poster_url, year, rating_score, item_id);
+    bodyHtml = renderRatingBody(displayTitle, item_type, safePosterUrl, year, rating_score, item_id);
   } else if (activity_type === "review" && item_id) {
     // Review aktivitesi - review_text ve review_rating'i birlikte göster
-    bodyHtml = renderReviewBody(displayTitle, item_type, poster_url, review_text, review_rating, review_id, item_id);
+    bodyHtml = renderReviewBody(displayTitle, item_type, safePosterUrl, review_text, review_rating, review_id, item_id);
   } else if (activity_type === "like_review") {
     // Review beğenisi
-    bodyHtml = renderReviewBody(displayTitle, item_type, poster_url, review_text, review_rating, activity.review_id, item_id);
+    bodyHtml = renderReviewBody(displayTitle, item_type, safePosterUrl, review_text, review_rating, activity.review_id, item_id);
   } else if (activity_type === "like_item" && item_id) {
     // Item beğenisi
-    bodyHtml = renderRatingBody(displayTitle, item_type, poster_url, year, 0, item_id);
+    bodyHtml = renderRatingBody(displayTitle, item_type, safePosterUrl, year, 0, item_id);
   } else if (activity_type === "comment_review") {
     // Yoruma yapılan yorum - referenced review'u göster
     bodyHtml = renderCommentReviewBody(referenced_review_text, review_owner_username, displayTitle);
@@ -539,19 +551,35 @@ async function handleLike(e) {
 
   try {
     let endpoint = "";
-    if (activityType === "review") {
-      endpoint = `/likes/review/${activityId}/like`;
-    } else if (activityType === "rating") {
-      // Rating beğenmesi (item like olarak)
+    const reviewId = card.getAttribute("data-review-id");
+
+    if (activityType === "review" || activityType === "like_review") {
+      // Review beğenisi - review_id kullan
+      const targetReviewId = reviewId || activityId;
+      if (!targetReviewId) {
+        console.warn("Review ID bulunamadı");
+        return;
+      }
+      endpoint = `/likes/review/${targetReviewId}/like`;
+    } else if (activityType === "rating" || activityType === "like_item") {
+      // Rating/Item beğenmesi (item like olarak)
       if (!itemId) {
         console.warn("Item ID bulunamadı");
         return;
       }
       endpoint = `/likes/item/${itemId}/like`;
+    } else if (activityType === "comment_review") {
+      // Yorum aktivitesi - review beğenisi olarak işle
+      const targetReviewId = reviewId || activityId;
+      if (!targetReviewId) {
+        console.warn("Review ID bulunamadı (comment_review)");
+        return;
+      }
+      endpoint = `/likes/review/${targetReviewId}/like`;
     }
 
     if (!endpoint) {
-      console.warn("Endpoint belirlenemedi");
+      console.warn("Endpoint belirlenemedi - desteklenmeyen aktivite türü:", activityType);
       return;
     }
 

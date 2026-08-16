@@ -83,10 +83,6 @@ body {
 .auth-header h1::after {
   content: ' 🎬';
 }
-  color: #333;
-  margin-bottom: 5px;
-  font-weight: 700;
-}
 
 .auth-header p {
   color: var(--book-text-muted);
@@ -159,10 +155,6 @@ body {
   box-shadow: 0 0 0 4px rgba(212, 181, 212, 0.15);
   background: white;
 }
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  background-color: #f8f9ff;
-}
 
 .form-group input::placeholder {
   color: var(--book-text-muted);
@@ -202,9 +194,6 @@ body {
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(212, 181, 212, 0.5);
-}
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
 }
 
 .btn-primary:active {

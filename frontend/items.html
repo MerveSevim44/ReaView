@@ -1626,31 +1626,6 @@
       }
     }
 
-    async function deleteCustomList(listId, listName) {
-      if (!confirm(`"${listName}" listesini silmek istediğinizden emin misiniz?`)) {
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/custom-lists/${listId}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          alert(`✅ "${listName}" listesi silindi!`);
-          // Modal'ı yenile
-          addCustomList();
-        } else {
-          alert(`❌ Hata: ${data.detail || 'Liste silinemedi'}`);
-        }
-      } catch (err) {
-        console.error('❌ Liste silme hatası:', err);
-        alert('❌ Liste silinirken hata oluştu');
-      }
-    }
-
     function closeListModal() {
       document.getElementById('listModal').classList.remove('active');
       document.getElementById('newListForm').style.display = 'none';

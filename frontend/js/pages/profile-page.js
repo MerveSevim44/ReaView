@@ -68,14 +68,20 @@ async function initializePage() {
       followBtn.style.display = "none";
     }
 
-    // Load all data in parallel
-    await Promise.all([
+    // Load all data in parallel - loadCustomLists ayrı handle ediliyor (500 hatası sayfayı kırmasın)
+    const [profileResult, activitiesResult, followingResult, libraryResult] = await Promise.allSettled([
       loadProfile(),
       loadActivities(),
       loadFollowingStatus(),
-      loadLibrary(),
-      loadCustomLists()
+      loadLibrary()
     ]);
+
+    // Custom lists ayrı yükle - hata olursa sadece o bölüm etkilenir
+    try {
+      await loadCustomLists();
+    } catch (listError) {
+      console.warn("⚠️ Özel listeler yüklenemedi (sayfa çalışmaya devam ediyor):", listError.message);
+    }
 
     // Setup interactive elements
     setupFollowButton();
