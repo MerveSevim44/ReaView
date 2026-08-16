@@ -779,19 +779,8 @@ def add_comment(item_id: int, review: schemas.ReviewCreate, db: Session = Depend
     if not item:
         raise HTTPException(status_code=404, detail="İçerik bulunamadı")
     
-    # Find the next available review_id (reuse deleted IDs)
-    # Get all existing IDs
-    existing_ids_query = db.query(models.Review.review_id).all()
-    existing_ids = {row[0] for row in existing_ids_query}
-    
-    # Find the first available ID (starting from 1)
-    next_id = 1
-    while next_id in existing_ids:
-        next_id += 1
-    
-    # Create new review with assigned ID
+    # Create new review - let PostgreSQL auto-generate review_id
     new_review = models.Review(
-        review_id=next_id,
         item_id=item_id,
         user_id=review.user_id,
         review_text=review.review_text,
@@ -1062,21 +1051,11 @@ def add_api_comment(source_id: str, comment: dict = Body(...), db: Session = Dep
             item_id = existing_item.item_id
             print(f"✅ Mevcut API item bulundu: {external_api_source}_{external_api_id} -> item_id: {item_id}")
         
-        # Find the next available review_id (reuse deleted IDs)
-        existing_ids_query = db.query(models.Review.review_id).all()
-        existing_ids = {row[0] for row in existing_ids_query}
-        
-        # Find the first available ID (starting from 1)
-        next_id = 1
-        while next_id in existing_ids:
-            next_id += 1
-        
-        # Review kaydı oluştur
+        # Review kaydı oluştur - let PostgreSQL auto-generate review_id
         new_review = models.Review(
-            review_id=next_id,
             user_id=user_id,
-            item_id=item_id,  # ← Artık item_id var!
-            source_id=source_id,  # Referans için tut
+            item_id=item_id,
+            source_id=source_id,
             review_text=review_text,
             rating=rating if rating and 1 <= rating <= 10 else None
         )
@@ -1174,29 +1153,16 @@ def rate_item(item_id: int, rating_data: dict, db: Session = Depends(get_db)):
                 "created_at": existing_rating.created_at
             }
         else:
-            # Yoksa yarat - gap-filling with next available ID
-            print(f"➕ Creating new rating with gap-filling")
-            
-            # Get all existing rating IDs
-            existing_ids_query = db.query(models.Rating.rating_id).all()
-            existing_ids = {row[0] for row in existing_ids_query}
-            print(f"🔍 Existing rating IDs: {sorted(existing_ids)}")
-            
-            # Find the first available ID (starting from 1)
-            next_id = 1
-            while next_id in existing_ids:
-                next_id += 1
-            
-            print(f"✨ Next available rating_id: {next_id}")
+            # Yoksa yarat - let PostgreSQL auto-generate rating_id
+            print(f"➕ Creating new rating")
             
             new_rating = models.Rating(
-                rating_id=next_id,
                 user_id=user_id,
                 item_id=item_id,
                 score=rating
             )
             db.add(new_rating)
-            db.flush()  # Get the ID before commit
+            db.flush()
             
             # Activity kaydı oluştur (yeni rating oluşturulduğunda)
             activity = models.Activity(
@@ -1325,18 +1291,10 @@ def rate_api_item(source_id: str, rating_data: dict = Body(...), db: Session = D
                 "score": existing_rating.score
             }
         else:
-            # Yoksa yarat - gap-filling
+            # Yoksa yarat - let PostgreSQL auto-generate rating_id
             print(f"➕ Yeni puan oluşturuluyor")
             
-            existing_ids_query = db.query(models.Rating.rating_id).all()
-            existing_ids = {row[0] for row in existing_ids_query}
-            
-            next_id = 1
-            while next_id in existing_ids:
-                next_id += 1
-            
             new_rating = models.Rating(
-                rating_id=next_id,
                 user_id=user_id,
                 item_id=item_id,
                 score=rating

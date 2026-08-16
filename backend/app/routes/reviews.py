@@ -37,19 +37,8 @@ def get_reviews_for_item(item_id: int, db: Session = Depends(get_db)):
 # Yeni yorum oluştur
 @router.post("/", response_model=schemas.ReviewOut)
 def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
-    # Find the next available review_id (reuse deleted IDs)
-    # Get all existing IDs
-    existing_ids_query = db.query(models.Review.review_id).all()
-    existing_ids = {row[0] for row in existing_ids_query}
-    
-    # Find the first available ID (starting from 1)
-    next_id = 1
-    while next_id in existing_ids:
-        next_id += 1
-    
-    # Create review with the assigned ID
+    # Create review - let PostgreSQL auto-generate review_id
     new_review = models.Review(
-        review_id=next_id,
         user_id=review.user_id,
         item_id=review.item_id,
         review_text=review.review_text,
