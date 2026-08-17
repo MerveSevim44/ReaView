@@ -61,7 +61,6 @@ export function initializeNavbar() {
 
     <div class="navbar-center" style="position: relative; z-index: 10001; pointer-events: auto;">
       <ul class="navbar-nav" style="position: relative; z-index: 10001; pointer-events: auto;">
-        <li><a href="./feed.html" class="nav-link">📰 Akış</a></li>
         <li><a href="./explore.html" class="nav-link">🔍 Keşfet</a></li>
       </ul>
     </div>

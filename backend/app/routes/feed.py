@@ -101,7 +101,15 @@ def get_feed(
             u.avatar_url,
             a.activity_type,
             a.item_id,
-            a.review_id,
+            CASE 
+                WHEN a.review_id IS NOT NULL THEN a.review_id
+                WHEN a.activity_type = 'rating' THEN (
+                    SELECT rev.review_id FROM reviews rev 
+                    WHERE rev.user_id = a.user_id AND rev.item_id = a.item_id 
+                    ORDER BY rev.created_at DESC LIMIT 1
+                )
+                ELSE a.review_id
+            END AS review_id,
             a.list_id,
             a.related_user_id,
             a.created_at,

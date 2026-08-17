@@ -25,7 +25,9 @@ const showError = (msg) => {
 };
 
 // Profile user from URL
-const profileUserId = Number(getQueryParam("user") || getQueryParam("id")) || currentUserId;
+const rawUserParam = getQueryParam("user") || getQueryParam("id");
+const parsedUserId = rawUserParam && !isNaN(Number(rawUserParam)) ? Number(rawUserParam) : null;
+const profileUserId = parsedUserId || currentUserId;
 
 // DOM References
 const followBtn = document.getElementById("mainFollowBtn");
@@ -107,7 +109,7 @@ async function loadProfile() {
     // Avatar URL - convert to proper path
     let avatarUrl = user.avatar_url;
     console.log(`📸 Avatar URL from API: ${avatarUrl}`);
-    
+
     if (avatarUrl) {
       // If file:// protocol, extract filename and use API endpoint
       if (avatarUrl.startsWith('file://')) {
@@ -122,14 +124,25 @@ async function loadProfile() {
         console.log(`📸 Converted relative path: ${avatarUrl}`);
       }
     }
-    
+
     // Fallback to generated avatar if no URL
     if (!avatarUrl) {
       avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=667eea&color=fff&bold=true`;
       console.log(`📸 Using generated avatar: ${avatarUrl}`);
     }
-    
+
     console.log(`📸 Final avatarUrl: ${avatarUrl}`);
+
+    // Load follow stats
+    let followStats = { followers_count: 0, following_count: 0 };
+    try {
+      const statsRes = await fetch(`${API_BASE}/users/${profileUserId}/follow-stats`);
+      if (statsRes.ok) {
+        followStats = await statsRes.json();
+      }
+    } catch (statsErr) {
+      console.warn("Takip istatistikleri alınamadı:", statsErr);
+    }
 
     profileBox.innerHTML = `
       <div class="profile-avatar">
@@ -142,6 +155,18 @@ async function loadProfile() {
       </div>
       <h2>@${user.username}</h2>
       <p class="muted">${user.email}</p>
+      
+      <div class="profile-follow-counts" style="display: flex; justify-content: center; gap: 24px; margin: 16px 0; padding: 12px 0; border-top: 1px solid rgba(201, 173, 167, 0.2); border-bottom: 1px solid rgba(201, 173, 167, 0.2);">
+        <div style="text-align: center; cursor: pointer;" onclick="document.getElementById('followersBtn')?.click()" title="Takipçileri görüntüle">
+          <div style="font-weight: 700; font-size: 18px; color: #4a4238;" id="profileFollowersCount">${followStats.followers_count || 0}</div>
+          <div style="font-size: 12px; color: #888;">Takipçi</div>
+        </div>
+        <div style="text-align: center; cursor: pointer;" onclick="document.getElementById('followingBtn')?.click()" title="Takip edilenleri görüntüle">
+          <div style="font-weight: 700; font-size: 18px; color: #4a4238;" id="profileFollowingCount">${followStats.following_count || 0}</div>
+          <div style="font-size: 12px; color: #888;">Takip Edilen</div>
+        </div>
+      </div>
+
       ${user.bio ? `<p class="bio" id="profileBio">${user.bio}</p>` : `<p class="muted bio" id="profileBio">Biyografi yok.</p>`}
       <p class="muted" style="margin-top: 16px;">
         📅 Katıldı: ${formatDate(user.created_at)}
@@ -234,22 +259,22 @@ function renderActivity(activity) {
   };
 
   const actionText = activityTypes[activity.activity_type] || "bir şey yaptı";
-  
+
   // Title'ı güvenli hale getir
   const displayTitle = activity.title && activity.title.trim() !== '' ? activity.title : 'İçerik';
   const titleText = activity.title ? ` - <em>${displayTitle}</em>` : "";
-  
+
   // comment_review için review sahibinin adını da ekle
   let fullAction = actionText;
   let referencedReviewHtml = "";
-  
+
   if (activity.activity_type === "comment_review" && activity.review_owner_username) {
     fullAction = `<strong>${activity.review_owner_username}</strong>'nin yorumuna yorum yaptı`;
-    
+
     // Yorumun text'ini göster
     if (activity.referenced_review_text) {
-      const truncated = activity.referenced_review_text.length > 150 
-        ? activity.referenced_review_text.substring(0, 150) + '...' 
+      const truncated = activity.referenced_review_text.length > 150
+        ? activity.referenced_review_text.substring(0, 150) + '...'
         : activity.referenced_review_text;
       referencedReviewHtml = `
         <div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-left: 2px solid #667eea; font-size: 12px; font-style: italic; color: #666;">
@@ -328,6 +353,14 @@ async function toggleFollow() {
 
     followingStatus[profileUserId] = !isFollowing;
     updateMainFollowButton();
+
+    // Update follower count in UI
+    const followersEl = document.getElementById("profileFollowersCount");
+    if (followersEl) {
+      let count = parseInt(followersEl.textContent) || 0;
+      followersEl.textContent = isFollowing ? Math.max(0, count - 1) : count + 1;
+    }
+
     showSuccess(isFollowing ? "Takip bırakıldı" : "Takip ediliyor");
   } catch (error) {
     showErrorToast(error.message);
@@ -406,18 +439,17 @@ function renderUserCard(user) {
         <a href="profile.html?user=${user.user_id}">@${user.username}</a>
         <div class="email muted">${user.email || ""}</div>
       </div>
-      ${
-        isCurrentUser
-          ? `<span class="user-badge-self">Siz</span>`
-          : isOwnProfile
-            ? `
+      ${isCurrentUser
+      ? `<span class="user-badge-self">Siz</span>`
+      : isOwnProfile
+        ? `
         <button class="follow-btn ${isFollowing ? "following" : "follow"}"
                 data-user-id="${user.user_id}">
           ${isFollowing ? "✓ Takip Ediliyor" : "Takip Et"}
         </button>
       `
-            : ""
-      }
+        : ""
+    }
     </div>
   `;
 }
@@ -466,7 +498,7 @@ async function loadLibrary() {
     // Fetch user library
     const url1 = `${API_BASE}/items/library/${profileUserId}`;
     console.log(`📡 Kütüphane yükleniyor: ${url1}`);
-    
+
     const response = await fetch(url1, {
       headers: {
         "Authorization": `Bearer ${sessionManager.getToken()}`
@@ -479,7 +511,7 @@ async function loadLibrary() {
       throw new Error("Kütüphane yüklenemedi");
     }
     console.log("✅ Kütüphane başarıyla yüklendi");
-    
+
     const libraryData = await response.json();
     console.log("📚 User Library:", libraryData);
 
@@ -504,7 +536,7 @@ async function loadLibrary() {
 
     // Render watched tab by default
     renderLibraryTab("watched", grouped);
-    
+
   } catch (error) {
     console.error("Library error:", error);
     Loader.showError(libraryContent, `Kütüphane yüklenemedi: ${error.message}`);
@@ -516,7 +548,7 @@ async function loadLibrary() {
  */
 function renderLibraryTab(status, grouped) {
   const items = grouped[status] || [];
-  
+
   if (items.length === 0) {
     libraryContent.innerHTML = `
       <div class="empty-state">
@@ -607,13 +639,13 @@ async function loadCustomLists() {
     // Fetch custom lists - current_user_id artık token'dan alınıyor
     const url2 = `${API_BASE}/items/custom-lists/${profileUserId}`;
     console.log(`📡 Özel Listeler yükleniyor: ${url2}`);
-    
+
     const headers = {};
     const token = sessionManager.getToken();
     if (token && token !== "null" && token !== "undefined") {
       headers["Authorization"] = `Bearer ${token}`;
     }
-    
+
     const response = await fetch(url2, { headers });
 
     if (!response.ok) {
@@ -622,15 +654,15 @@ async function loadCustomLists() {
       throw new Error(errorData.detail || "Listeler yüklenemedi");
     }
     console.log("✅ Özel Listeler başarıyla yüklendi");
-    
+
     const listsData = await response.json();
     console.log("✨ Custom Lists:", listsData);
 
     if (!listsData.lists || listsData.lists.length === 0) {
-      const emptyMessage = isOwnProfile 
-        ? '✨ Henüz özel liste oluşturulmamış' 
+      const emptyMessage = isOwnProfile
+        ? '✨ Henüz özel liste oluşturulmamış'
         : '🔒 Bu kullanıcının herkese açık listesi yok';
-      
+
       customLists.innerHTML = `
         <div class="empty-state">
           <p>${emptyMessage}</p>
@@ -645,7 +677,7 @@ async function loadCustomLists() {
       const privacyLevel = list.privacy_level !== undefined ? list.privacy_level : (list.is_public ? 2 : 0);
       const privacyIcon = privacyIcons[privacyLevel] || '🔒';
       const privacyText = privacyTexts[privacyLevel] || 'Özel';
-      
+
       return `
         <div class="custom-list-item" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.3s;" 
              onmouseover="this.style.backgroundColor='#f5f5f5'" 
@@ -664,7 +696,7 @@ async function loadCustomLists() {
         </div>
       `;
     }).join("");
-    
+
   } catch (error) {
     console.error("Custom lists error:", error);
     Loader.showError(customLists, `Listeler yüklenemedi: ${error.message}`);
@@ -677,19 +709,19 @@ async function loadCustomLists() {
 function setupLibraryTabs() {
   const tabs = document.querySelectorAll(".tab-btn");
   let groupedItems = {}; // Cache grouped items
-  
+
   // Store grouped items from loadLibrary
   const originalLoadLibrary = loadLibrary;
   window.cachedLibraryGroups = {};
-  
+
   tabs.forEach(tab => {
     tab.addEventListener("click", async (e) => {
       tabs.forEach(t => t.classList.remove("active"));
       e.target.classList.add("active");
-      
+
       const tabName = e.target.dataset.tab;
       console.log("📂 Tab clicked:", tabName);
-      
+
       // Map tab names to database status values
       const statusMap = {
         'watched': 'watched',
@@ -697,9 +729,9 @@ function setupLibraryTabs() {
         'read': 'read',
         'readlist': 'toread'
       };
-      
+
       const status = statusMap[tabName];
-      
+
       // If we have cached data, render it
       if (window.cachedLibraryGroups && window.cachedLibraryGroups[status]) {
         renderLibraryTab(status, window.cachedLibraryGroups);
@@ -708,22 +740,22 @@ function setupLibraryTabs() {
         try {
           const url3 = `${API_BASE}/items/library/${profileUserId}?status=${status}`;
           console.log(`📡 Kütüphane sekmesi yükleniyor (${status}): ${url3}`);
-          
+
           const response = await fetch(url3, {
             headers: {
               "Authorization": `Bearer ${sessionManager.getToken()}`
             }
           });
-          
+
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error(`❌ Kütüphane sekmesi yükleme hatası (${status}): ${response.status}`, errorData);
             throw new Error("Veri yüklenemedi");
           }
           console.log(`✅ Kütüphane sekmesi (${status}) başarıyla yüklendi`);
-          
+
           const data = await response.json();
-          
+
           if (data.items && data.items.length > 0) {
             const grouped = {};
             grouped[status] = data.items;
@@ -743,7 +775,7 @@ function setupLibraryTabs() {
 function setupEditProfileButton() {
   const editProfileBtn = document.getElementById("editProfileBtn");
   const token = sessionManager.getToken();
-  
+
   // Verify all modal elements exist
   const editProfileModal = document.getElementById("editProfileModal");
   const closeEditModal = document.getElementById("closeEditModal");
@@ -762,7 +794,7 @@ function setupEditProfileButton() {
     bioTextarea: bioTextarea ? "✅" : "❌",
     avatarPickerGrid: avatarPickerGrid ? "✅" : "❌"
   });
-  
+
   if (!editProfileBtn || !isOwnProfile || !token) {
     console.log("⚠️ Edit button setup skipped - missing requirements");
     return;
@@ -779,11 +811,11 @@ function setupEditProfileButton() {
   // Open modal when edit button clicked
   editProfileBtn.addEventListener("click", () => {
     console.log("✏️ Profili düzenle modal açılıyor");
-    
+
     // Reset form
     bioTextarea.value = userBio || "";
     bioCharCount.textContent = (userBio || "").length;
-    
+
     // Show modal
     editProfileModal.style.display = "flex";
   });
@@ -819,33 +851,33 @@ function setupEditProfileButton() {
       saveEditBtn.disabled = true;
       try {
         const url = `${API_BASE}/users/${currentUserId}`;
-        
+
         const response = await fetch(url, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${sessionManager.getToken()}`
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             bio: newBio,
             avatar_url: avatarUrl
           })
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           console.error(`❌ Profil güncelleme hatası: ${response.status}`, errorData);
           showErrorToast("❌ Profil güncellenirken hata oluştu!");
           return;
         }
-        
+
         const updatedUser = await response.json();
         console.log("✅ Profil başarıyla güncellendi!", updatedUser);
-        
+
         userBio = updatedUser.bio;
         showSuccess("✅ Profil başarıyla güncellendi!");
         closeModal();
-        
+
         // UI'ı güncellemek için profili yeniden yükle
         setTimeout(() => {
           loadProfile();
@@ -871,36 +903,36 @@ function setupCreateListButton() {
       if (!listName || !listName.trim()) return;
 
       const description = prompt("Liste açıklaması (opsiyonel):", "");
-      
+
       // Gizlilik seçenekleri
       const privacyOptions = [
         "0 - 🔒 Sadece Ben (Özel)",
         "1 - 👥 Sadece Takipçilerim",
         "2 - 🌐 Herkes (Herkese Açık)"
       ];
-      
+
       const privacyChoice = prompt(
         "Liste gizlilik ayarını seçin:\n\n" +
         privacyOptions.join("\n") +
         "\n\nLütfen 0, 1 veya 2 girin:",
         "0"
       );
-      
+
       // Validate input
       const privacyLevel = parseInt(privacyChoice);
       if (![0, 1, 2].includes(privacyLevel)) {
         showError("Geçersiz gizlilik seçimi! 0, 1 veya 2 olmalı.");
         return;
       }
-      
+
       try {
         const url4 = `${API_BASE}/items/custom-lists`;
-        console.log(`📡 Yeni liste oluşturuluyor: ${url4}`, { 
-          name: listName, 
-          description, 
+        console.log(`📡 Yeni liste oluşturuluyor: ${url4}`, {
+          name: listName,
+          description,
           privacy_level: privacyLevel
         });
-        
+
         const response = await fetch(url4, {
           method: "POST",
           headers: {
@@ -926,7 +958,7 @@ function setupCreateListButton() {
 
         const privacyTexts = ["özel", "takipçilerime özel", "herkese açık"];
         showSuccess(`"${listName}" ${privacyTexts[privacyLevel]} liste olarak oluşturuldu!`);
-        
+
         // Listeyi yeniden yükle
         setTimeout(() => {
           loadCustomLists();
@@ -943,18 +975,18 @@ function setupCreateListButton() {
 /**
  * Mark item as completed (watched/read)
  */
-window.markAsCompleted = async function(itemId, currentStatus, checkboxContainer) {
+window.markAsCompleted = async function (itemId, currentStatus, checkboxContainer) {
   try {
     const checkbox = checkboxContainer.querySelector('.custom-checkbox');
-    
+
     // Visual feedback - immediately check the box
     checkbox.classList.add('checked');
-    
+
     // Determine new status
     const newStatus = currentStatus === 'towatch' ? 'watched' : 'read';
-    
+
     console.log(`✅ Durum değiştiriliyor: ${currentStatus} -> ${newStatus} (item: ${itemId})`);
-    
+
     // Update status via API
     const response = await fetch(`${API_BASE}/items/${itemId}/library`, {
       method: "POST",
@@ -979,11 +1011,11 @@ window.markAsCompleted = async function(itemId, currentStatus, checkboxContainer
 
     const successMessage = currentStatus === 'towatch' ? '✅ İzledim olarak işaretlendi!' : '✅ Okudum olarak işaretlendi!';
     showSuccess(successMessage);
-    
+
     // Wait a bit for animation then reload library
     setTimeout(async () => {
       await loadLibrary();
-      
+
       // Switch to the appropriate tab
       const tabs = document.querySelectorAll(".tab-btn");
       const targetTab = currentStatus === 'towatch' ? 'watched' : 'read';
@@ -994,7 +1026,7 @@ window.markAsCompleted = async function(itemId, currentStatus, checkboxContainer
           tab.classList.remove('active');
         }
       });
-      
+
       // Render the new tab
       if (window.cachedLibraryGroups) {
         renderLibraryTab(targetTab, window.cachedLibraryGroups);
@@ -1013,7 +1045,7 @@ window.markAsCompleted = async function(itemId, currentStatus, checkboxContainer
 async function loadAvatarsForProfile() {
   const avatarPickerGrid = document.getElementById("avatarPickerGrid");
   const selectedAvatarColor = document.getElementById("selectedAvatarColor");
-  
+
   if (!avatarPickerGrid) {
     console.error("Avatar picker grid not found");
     return;
@@ -1022,22 +1054,22 @@ async function loadAvatarsForProfile() {
   try {
     // Fetch available avatars from API
     const response = await fetch(`${API_BASE}/users/api/avatars/list`);
-    
+
     if (!response.ok) {
       throw new Error('Failed to load avatars');
     }
-    
+
     const data = await response.json();
     const avatars = data.avatars || [];
-    
+
     // Clear existing grid
     avatarPickerGrid.innerHTML = '';
-    
+
     if (avatars.length === 0) {
       avatarPickerGrid.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">Henüz avatar bulunmuyor</p>';
       return;
     }
-    
+
     // Create avatar options
     avatars.forEach((avatar, index) => {
       const avatarPath = `./avatars/${avatar}`;
@@ -1046,7 +1078,7 @@ async function loadAvatarsForProfile() {
       avatarOption.style.cursor = 'pointer';
       avatarOption.title = avatar;
       avatarOption.dataset.avatar = avatarPath;
-      
+
       const img = document.createElement('img');
       img.src = avatarPath;
       img.alt = avatar;
@@ -1054,33 +1086,33 @@ async function loadAvatarsForProfile() {
       img.onerror = () => {
         avatarOption.style.display = 'none';
       };
-      
+
       avatarOption.appendChild(img);
-      
+
       // Click handler
       avatarOption.addEventListener('click', () => {
         // Remove selected class from all options
         document.querySelectorAll('.avatar-option').forEach(opt => {
           opt.classList.remove('selected');
         });
-        
+
         // Add selected class to clicked option
         avatarOption.classList.add('selected');
-        
+
         // Update hidden input
         selectedAvatarColor.value = avatarPath;
         console.log(`🎨 Avatar seçildi: ${avatarPath}`);
       });
-      
+
       avatarPickerGrid.appendChild(avatarOption);
-      
+
       // Select first avatar by default
       if (index === 0) {
         avatarOption.classList.add('selected');
         selectedAvatarColor.value = avatarPath;
       }
     });
-    
+
     console.log(`✅ ${avatars.length} avatar yüklendi`);
   } catch (error) {
     console.error('Error loading avatars:', error);

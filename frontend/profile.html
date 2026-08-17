@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profil • BiblioNet</title>
-  <link rel="stylesheet" href="./css/style.css?v=20260817c" />
-  <link rel="stylesheet" href="./css/navbar.css?v=20260817c" />
-  <link rel="stylesheet" href="./css/profile.css?v=20260817c" />
+  <link rel="stylesheet" href="./css/style.css?v=20260817d" />
+  <link rel="stylesheet" href="./css/navbar.css?v=20260817d" />
+  <link rel="stylesheet" href="./css/profile.css?v=20260817d" />
 </head>
+
 <body>
   <!-- Navbar otomatik olarak eklenecek -->
 
@@ -21,7 +23,7 @@
         </button>
       </div>
     </header>
-    
+
     <div class="profile-layout">
       <!-- Left Sidebar: Profile Info -->
       <aside class="profile-sidebar">
@@ -32,9 +34,9 @@
         <button id="editProfileBtn" class="btn-primary btn-block" style="display: none;">
           ✏️ Profili Düzenle
         </button>
-        
+
       </aside>
-      
+
       <!-- Main Content -->
       <main class="profile-content">
         <!-- Library Tabs Section -->
@@ -117,13 +119,8 @@
         <!-- Bio Textarea -->
         <div class="bio-section" style="margin-top: 20px;">
           <label for="bioTextarea" style="font-weight: 600; margin-bottom: 8px; display: block;">Biyografi</label>
-          <textarea 
-            id="bioTextarea" 
-            class="bio-textarea" 
-            placeholder="Biyografını yaz... (maksimum 500 karakter)"
-            maxlength="500"
-            rows="4"
-          ></textarea>
+          <textarea id="bioTextarea" class="bio-textarea" placeholder="Biyografını yaz... (maksimum 500 karakter)"
+            maxlength="500" rows="4"></textarea>
           <div style="text-align: right; font-size: 12px; color: #999; margin-top: 4px;">
             <span id="bioCharCount">0</span>/500
           </div>
@@ -143,4 +140,5 @@
   <!-- Load Profile Module -->
   <script type="module" src="./js/pages/profile-page.js"></script>
 </body>
+
 </html>

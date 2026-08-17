@@ -98,7 +98,7 @@ async function loadFeed() {
     // İlk sayfayı getir (skip=0, limit=15). This endpoint is public.
     // user_id artık token'dan otomatik alınıyor
     const activities = await getFeed(0, pageSize);
-    
+
     if (!activities || activities.length === 0) {
       feedContainer.innerHTML = '<div class="empty-state"><p>📭 Henüz aktivite yok. Kullanıcıları takip etmeye başlayın!</p></div>';
       loadMoreContainer.style.display = "none";
@@ -115,7 +115,7 @@ async function loadFeed() {
     // Sayfalandırma durumunu güncelle
     currentPage = 0;
     hasMore = activities.length === pageSize;
-    
+
     // "Daha Fazla Yükle" butonunu göster/gizle
     loadMoreContainer.style.display = hasMore ? "block" : "none";
 
@@ -182,15 +182,15 @@ async function loadMoreActivities() {
  * - Footer: Beğen, Yorum, Paylaş butonları
  */
 function renderActivityCard(activity) {
-  const { activity_id, activity_type, created_at, user_id, username, avatar_url, 
-           item_id, title, item_type, poster_url, year, review_text, rating_score, review_rating,
-           review_id, like_count = 0, comment_count = 0, is_liked_by_user = 0, is_item_liked_by_user = 0,
-           review_owner_username = '', referenced_review_text = '', source_id = '' } = activity;
+  const { activity_id, activity_type, created_at, user_id, username, avatar_url,
+    item_id, title, item_type, poster_url, year, review_text, rating_score, review_rating,
+    review_id, like_count = 0, comment_count = 0, is_liked_by_user = 0, is_item_liked_by_user = 0,
+    review_owner_username = '', referenced_review_text = '', source_id = '' } = activity;
 
   const timestamp = formatRelativeTime(created_at);
   const displayName = username || `Kullanıcı #${user_id}`;
   const profileLink = `./profile.html?user=${user_id}`;
-  
+
   // Title'ı güvenli hale getir - empty ise fallback göster
   const displayTitle = title && title.trim() !== '' ? title : 'İçerik';
 
@@ -266,22 +266,22 @@ function renderActivityCard(activity) {
       <!-- Footer -->
       <div class="activity-footer">
         ${(() => {
-          // Beğeni state'ini belirle
-          let isLiked = false;
-          if (activity_type === "review" || activity_type === "like_review") {
-            isLiked = is_liked_by_user === 1;
-          } else if (activity_type === "rating" || activity_type === "like_item") {
-            isLiked = is_item_liked_by_user === 1;
-          }
-          const likeIcon = isLiked ? "❤️" : "🤍";
-          const activeClass = isLiked ? "active" : "";
-          return `
+      // Beğeni state'ini belirle
+      let isLiked = false;
+      if (activity_type === "review" || activity_type === "like_review") {
+        isLiked = is_liked_by_user === 1;
+      } else if (activity_type === "rating" || activity_type === "like_item") {
+        isLiked = is_item_liked_by_user === 1;
+      }
+      const likeIcon = isLiked ? "❤️" : "🤍";
+      const activeClass = isLiked ? "active" : "";
+      return `
             <button class="btn-action btn-like ${activeClass}" title="Beğen" data-review-id="${review_id || ''}" data-item-id="${item_id || ''}">
               <span class="like-icon">${likeIcon}</span>
               <span class="like-count" style="cursor: pointer;" title="Beğenenleri görmek için tıkla">${like_count}</span>
             </button>
           `;
-        })()}
+    })()}
         <button class="btn-action btn-comment" title="Yorum Yap" ${!review_id ? 'disabled' : ''}>
           <span class="comment-icon">💬</span>
           <span class="comment-count">${comment_count}</span>
@@ -331,7 +331,7 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore, itemId)
 function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, reviewId, itemId) {
   // Review metni truncate et (150 karakter)
   const maxExcerptLength = 150;
-  const excerpt = reviewText && reviewText.length > maxExcerptLength 
+  const excerpt = reviewText && reviewText.length > maxExcerptLength
     ? reviewText.substring(0, maxExcerptLength).trim() + "..."
     : reviewText;
 
@@ -381,10 +381,10 @@ function renderGenericBody(title) {
  */
 function renderCommentReviewBody(referencedReviewText, reviewOwnerUsername, itemTitle) {
   // Yorumu kısalt (ilk 200 karakter)
-  const truncatedText = referencedReviewText && referencedReviewText.length > 200 
-    ? referencedReviewText.substring(0, 200) + '...' 
+  const truncatedText = referencedReviewText && referencedReviewText.length > 200
+    ? referencedReviewText.substring(0, 200) + '...'
     : referencedReviewText || 'Yorum metni bulunamadı';
-    
+
   return `
     <div class="activity-body activity-comment-body" style="padding: 16px;">
       <div style="background: #f8f9fa; padding: 12px; border-left: 3px solid #667eea; border-radius: 6px; margin-bottom: 12px;">
@@ -412,7 +412,7 @@ function bindActivityEvents() {
   feedContainer.querySelectorAll(".btn-like").forEach(btn => {
     if (!btn.dataset.listenerAttached) {
       btn.addEventListener("click", handleLike);
-      
+
       // Like count'a tıklanırsa beğenenleri göster
       const likeCount = btn.querySelector(".like-count");
       likeCount.addEventListener("click", (e) => {
@@ -422,7 +422,7 @@ function bindActivityEvents() {
         const itemId = btn.getAttribute("data-item-id");
         showLikesModal(card, reviewId || null, itemId || null);
       });
-      
+
       btn.dataset.listenerAttached = "true";
     }
   });
@@ -460,14 +460,14 @@ function bindActivityEvents() {
       const activityId = card.getAttribute("data-activity-id");
       const activityType = card.getAttribute("data-activity-type");
       const reviewId = card.getAttribute("data-review-id");
-      
+
       if (currentUser) {
-        // Review'lar için yorumları yükle
-        if (activityType === "review" && reviewId) {
+        // Review, rating, like_review, comment_review için yorumları yükle
+        if (reviewId && (activityType === "review" || activityType === "rating" || activityType === "like_review" || activityType === "comment_review")) {
           displayComments(card, reviewId, currentUser.id);
         }
       }
-      
+
       card.dataset.dataLoaded = "true";
     }
   });
@@ -496,7 +496,7 @@ async function updateLikeCount(card, id, type) {
     if (!response.ok) return;
 
     const data = await response.json();
-    
+
     // Count'u bul - API response formatını handle et
     let likeCount = 0;
     if (typeof data === 'object') {
@@ -517,7 +517,7 @@ async function updateLikeCount(card, id, type) {
       const likeCountEl = likeBtn.querySelector(".like-count");
       likeCountEl.textContent = likeCount;
     }
-    
+
     console.log(`✅ Like count güncellendi: ${likeCount}`);
   } catch (error) {
     console.error("Like count güncelleme hatası:", error);
@@ -617,11 +617,11 @@ async function handleLike(e) {
             "Authorization": `Bearer ${sessionManager.getToken()}`
           }
         });
-        
+
         if (likesResponse.ok) {
           const likesData = await likesResponse.json();
           let newLikeCount = 0;
-          
+
           if (typeof likesData === 'object') {
             if (likesData.total_likes !== undefined) {
               newLikeCount = likesData.total_likes;
@@ -633,7 +633,7 @@ async function handleLike(e) {
               newLikeCount = likesData.likes.length;
             }
           }
-          
+
           likeCount.textContent = newLikeCount;
         }
       } catch (err) {
@@ -675,13 +675,12 @@ async function handleComment(e) {
   try {
     let endpoint = "";
     let reviewId = card.getAttribute("data-review-id");
-    
-    if (activityType === "review" && reviewId) {
-      endpoint = `/likes/review/${reviewId}/comments`;
-    } else if (activityType === "like_review" && reviewId) {
+
+    if ((activityType === "review" || activityType === "like_review" || activityType === "rating" || activityType === "comment_review") && reviewId) {
       endpoint = `/likes/review/${reviewId}/comments`;
     } else {
-      console.warn("Bu aktivite türü yoruma desteklenmiyor veya review_id bulunamadı");
+      console.warn("Bu aktivite türü yoruma desteklenmiyor veya review_id bulunamadı, activityType:", activityType, "reviewId:", reviewId);
+      alert("Bu aktiviteye yorum yapmak için önce bir yorum (review) yazılmış olmalıdır.");
       return;
     }
 
@@ -758,11 +757,13 @@ async function displayComments(card, reviewId, currentUserId) {
       <div class="comment-item" data-comment-id="${comment.comment_id}">
         <div class="comment-header">
           <div class="comment-user-info">
-            ${comment.avatar_url ? `<img src="${comment.avatar_url}" alt="${comment.username}" class="comment-avatar">` : `<span class="comment-avatar-placeholder">👤</span>`}
-            <div class="comment-user-details">
-              <strong class="comment-username">${comment.username}</strong>
-              <small class="comment-time">${formatRelativeTime(comment.created_at)}</small>
-            </div>
+            <a href="./profile.html?user=${comment.user_id}" style="text-decoration: none; display: flex; align-items: center; gap: 8px; color: inherit;" title="${comment.username} profilini görüntüle">
+              ${comment.avatar_url ? `<img src="${comment.avatar_url}" alt="${comment.username}" class="comment-avatar">` : `<span class="comment-avatar-placeholder">👤</span>`}
+              <div class="comment-user-details">
+                <strong class="comment-username" style="color: #667eea; cursor: pointer;">${comment.username}</strong>
+                <small class="comment-time">${formatRelativeTime(comment.created_at)}</small>
+              </div>
+            </a>
           </div>
           ${comment.user_id === currentUserId ? `
             <button class="btn-delete-comment" onclick="deleteComment(${comment.comment_id}, ${reviewId})" title="Sil">🗑️</button>
@@ -791,7 +792,7 @@ async function displayComments(card, reviewId, currentUserId) {
 /**
  * Yorum sil
  */
-window.deleteComment = async function(commentId, reviewId) {
+window.deleteComment = async function (commentId, reviewId) {
   if (!confirm("Yorum silinsin mi?")) return;
 
   const currentUser = sessionManager.getCurrentUser();
@@ -856,7 +857,7 @@ function handleShare(e) {
 async function showLikesModal(cardElement, reviewId = null, itemId = null) {
   const modal = document.getElementById("likes-modal");
   const modalBody = document.getElementById("likes-modal-body");
-  
+
   if (!reviewId && !itemId) {
     modalBody.innerHTML = '<p style="text-align: center; color: #999;">Beğeni bulunamadı</p>';
     modal.style.display = "flex";
@@ -884,7 +885,7 @@ async function showLikesModal(cardElement, reviewId = null, itemId = null) {
 
     const data = await response.json();
     let likes = [];
-    
+
     // API response formatını handle et
     if (Array.isArray(data)) {
       likes = data;
