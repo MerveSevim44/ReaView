@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Keşfet • BiblioNet</title>
   <link rel="stylesheet" href="./css/style.css" />
   <link rel="stylesheet" href="./css/navbar.css?v=20260817b" />
-  
+
   <style>
     * {
       margin: 0;
@@ -311,7 +312,9 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .empty-state {
@@ -387,20 +390,17 @@
     }
   </style>
 </head>
+
 <body>
   <!-- Navbar otomatik olarak eklenecek -->
 
   <main id="main-content">
     <h1>🔍 Keşfet</h1>
-    
+
     <!-- ARAMA BÖLÜMÜ -->
     <div class="search-section">
       <div class="search-box">
-        <input 
-          type="text" 
-          id="searchInput" 
-          placeholder="Film, kitap, yönetmen, yazar ara..." 
-        />
+        <input type="text" id="searchInput" placeholder="Film, kitap, yönetmen, yazar ara..." />
         <button class="search-btn" id="searchBtn">🔍 Ara</button>
       </div>
 
@@ -417,13 +417,7 @@
 
         <div class="filter-group">
           <label for="filterYear">Yıl</label>
-          <input 
-            type="number" 
-            id="filterYear" 
-            placeholder="Örn: 2024"
-            min="1900"
-            max="2100"
-          />
+          <input type="number" id="filterYear" placeholder="Örn: 2024" min="1900" max="2100" />
         </div>
 
         <div class="filter-group">
@@ -481,11 +475,11 @@
     import { API_BASE_URL as API_BASE } from "./js/core/env.js";
 
     const API_URL = `${API_BASE}/items`;
-    
+
     // DOM elementlerini sonradan yükle (değişkenler olarak tanımla)
     let searchInput, searchBtn, resultsContainer, topRatedContainer, mostPopularContainer, clearFiltersBtn;
     let filterType, filterYear, filterRating, sortBy;
-    
+
     // DOM elementlerini elde et
     const initDOMElements = () => {
       searchInput = document.getElementById('searchInput');
@@ -503,7 +497,7 @@
     // ============ SESSION STORAGE: ARAMA SONUÇLARINı KAYDET ============
     const STORAGE_KEY = 'searchState';
     const ITEMS_STORAGE_KEY = 'searchItems';
-    
+
     const saveSearchState = () => {
       const state = {
         query: searchInput.value,
@@ -541,13 +535,13 @@
 
     const renderResults = (items, container) => {
       console.log('🎨 renderResults çağrıldı:', { itemsCount: items?.length, containerClass: container.id });
-      
+
       currentItems = items;  // Global tutarak sessionStorage'a kaydet
       sessionStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(items));
-      
+
       // ⚠️ Poster olmayan items'ları filtrele (vitrin'de görünmesin)
       const itemsWithPoster = items?.filter(item => item.poster_url) || [];
-      
+
       if (!itemsWithPoster || itemsWithPoster.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
@@ -562,10 +556,10 @@
         // Hybrid rating: combined_rating > user_rating > external_rating > 0
         const rating = item.combined_rating || item.user_rating || item.external_rating || 0;
         const stars = rating > 0 ? '⭐'.repeat(Math.floor(rating / 2)) + (rating % 2 !== 0 ? '✨' : '') : '';
-        
+
         // Item türünü belirle (DB veya API)
         const itemType = item.item_type || item.type || (item.source === 'tmdb' ? 'movie' : 'book');
-        
+
         // Rating kaynağını göster
         let ratingInfo = '';
         if (item.external_rating && !item.user_rating) {
@@ -575,7 +569,7 @@
         } else if (item.external_rating && item.user_rating) {
           ratingInfo = ` <small style="color: #999; font-size: 0.8em;">(Hibrid)</small>`;
         }
-        
+
         return `
           <div class="result-card">
             <div class="result-card-image">
@@ -605,7 +599,7 @@
           </div>
         `;
       }).join('');
-      
+
       // Event listeners ekle
       container.querySelectorAll('.detail-db-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -616,7 +610,7 @@
           goToDetail(itemId);
         });
       });
-      
+
       container.querySelectorAll('.detail-api-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -646,22 +640,22 @@
     const goToDetailAPI = (item) => {
       try {
         console.log(`📍 API İçeriği Detay İsteniliyor - Title: ${item.title}`);
-        
+
         // Item türünü kontrol et
         if (!item.title) {
           throw new Error('Item başlık bilgisi eksik. Item verisi: ' + JSON.stringify(item));
         }
-        
+
         console.log('✅ API İçeriği Bulundu:', {
           title: item.title,
           source: item.source,
           id: item.id,
           sourceId: item.sourceId
         });
-        
+
         const itemJson = JSON.stringify(item);
         const encodedId = encodeURIComponent(itemJson);
-        
+
         console.log(`✅ API Item Detayına Gidiliyor - Title: ${item.title}, URL: items.html?id=...&source=api`);
         window.location.href = `items.html?id=${encodedId}&source=api`;
       } catch (err) {
@@ -673,7 +667,7 @@
     // ============ ARAMA FONKSİYONU ============
     const performSearch = async () => {
       const query = searchInput.value.trim();
-      
+
       if (query.length < 2) {
         alert('Lütfen en az 2 karakter yazın');
         return;
@@ -686,7 +680,7 @@
         const dbUrl = `${API_URL}/search?q=${encodeURIComponent(query)}`;
         const token = sessionManager.getToken();
         const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-        
+
         console.log('🔍 Veritabanında aranıyor:', dbUrl);
         console.log('🔍 External API\'de aranıyor (Film ve Kitap)');
 
@@ -696,13 +690,13 @@
           fetch(`${API_BASE}/external/search?type=movie&query=${encodeURIComponent(query)}`, { headers }).catch(() => null),
           fetch(`${API_BASE}/external/search?type=book&query=${encodeURIComponent(query)}`, { headers }).catch(() => null)
         ]);
-        
+
         if (!dbResponse.ok) throw new Error('Veritabanı Arama Hatası');
 
         const dbResults = await dbResponse.json();
         const movies = movieResponse?.ok ? await movieResponse.json() : [];
         const books = bookResponse?.ok ? await bookResponse.json() : [];
-        
+
         // Her bir API result'a source bilgisi ekle
         movies.forEach(movie => {
           movie.source = 'tmdb';
@@ -712,14 +706,14 @@
           book.source = book.provider === 'google' ? 'google_books' : 'openlib';
           book.sourceId = `${book.source}_${book.external_api_id || book.id}`;
         });
-        
+
         console.log('📚 Veritabanı Sonuçları:', dbResults);
         console.log('🎬 External API Film Sonuçları:', movies);
         console.log('📖 External API Kitap Sonuçları:', books);
 
         // Tüm sonuçları birleştir
         let allResults = [...dbResults, ...(movies || []), ...(books || [])];
-        
+
         // Duplikatları kaldır (aynı title olanlar)
         const seen = new Set();
         allResults = allResults.filter(item => {
@@ -728,7 +722,7 @@
           seen.add(key);
           return true;
         });
-        
+
         console.log(`📊 Toplam Sonuç Sayısı (Birleştirme Sonrası): ${allResults.length}`);
 
         // FİLTRELEME
@@ -748,7 +742,7 @@
         }
 
         // SIRALAMA
-        switch(sortBy.value) {
+        switch (sortBy.value) {
           case 'rating':
             allResults.sort((a, b) => (b.combined_rating || b.user_rating || b.external_rating || 0) - (a.combined_rating || a.user_rating || a.external_rating || 0));
             break;
@@ -764,7 +758,7 @@
         }
 
         renderResults(allResults, resultsContainer);
-        
+
         // Arama state'ini kaydet
         currentItems = allResults;
         sessionStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(allResults));
@@ -792,20 +786,20 @@
         const response = await fetch(`${API_URL}/featured/top-rated?limit=6`);
         console.log('📡 Response OK:', response.ok, 'Status:', response.status);
         if (!response.ok) throw new Error('API Hatası');
-        
+
         let items = await response.json();
         console.log('✅ Veri parse edildi:', items.length, 'item');
-        
+
         // Her item'a sourceId ekle (API items için)
         items.forEach(item => {
           if (item.external_api_id && !item.item_id) {
             // Bu bir API item'ı (database'de yoksa)
-            item.source = item.external_api_source === 'tmdb' ? 'tmdb' : 
-                         item.external_api_source === 'google_books' ? 'google_books' : 'openlib';
+            item.source = item.external_api_source === 'tmdb' ? 'tmdb' :
+              item.external_api_source === 'google_books' ? 'google_books' : 'openlib';
             item.sourceId = `${item.source}_${item.external_api_id}`;
           }
         });
-        
+
         console.log('⭐ En Yüksek Puanlılar:', items);
         renderResults(items, topRatedContainer);
         console.log('✅ renderResults çağrıldı');
@@ -822,20 +816,20 @@
         const response = await fetch(`${API_URL}/featured/popular?limit=6`);
         console.log('📡 Response OK:', response.ok, 'Status:', response.status);
         if (!response.ok) throw new Error('API Hatası');
-        
+
         let items = await response.json();
         console.log('✅ Veri parse edildi:', items.length, 'item');
-        
+
         // Her item'a sourceId ekle (API items için)
         items.forEach(item => {
           if (item.external_api_id && !item.item_id) {
             // Bu bir API item'ı (database'de yoksa)
-            item.source = item.external_api_source === 'tmdb' ? 'tmdb' : 
-                         item.external_api_source === 'google_books' ? 'google_books' : 'openlib';
+            item.source = item.external_api_source === 'tmdb' ? 'tmdb' :
+              item.external_api_source === 'google_books' ? 'google_books' : 'openlib';
             item.sourceId = `${item.source}_${item.external_api_id}`;
           }
         });
-        
+
         console.log('🔥 En Popülerler:', items);
         renderResults(items, mostPopularContainer);
         console.log('✅ renderResults çağrıldı');
@@ -848,11 +842,11 @@
     // ============ INITIALIZATION - SAYFA LOAD'LANINCA ÇALIŞ ============
     window.addEventListener('load', async () => {
       console.log('📍 Page loaded, initializing...');
-      
+
       // 1️⃣ DOM elementlerini elde et
       initDOMElements();
       console.log('✅ DOM elements loaded');
-      
+
       // 2️⃣ EVENT LİSTENERS EKLE
       searchBtn.addEventListener('click', performSearch);
       searchInput.addEventListener('keypress', (e) => {
@@ -911,4 +905,5 @@
     });
   </script>
 </body>
+
 </html>

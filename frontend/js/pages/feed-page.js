@@ -305,7 +305,7 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore, itemId)
   let starDisplay = "★".repeat(stars) + "☆".repeat(5 - stars);
 
   // Placeholder poster - Check if posterUrl is valid (not empty string, null, or falsy)
-  const displayPoster = (posterUrl && posterUrl.trim() !== '') ? posterUrl : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120'%3E%3Crect fill='%23f0f0f0' width='80' height='120'/%3E%3Ctext x='50%' y='50%' font-size='12' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
+  const displayPoster = (posterUrl && posterUrl.trim() !== '') ? posterUrl : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120'%3E%3Crect fill='%23faf8f5' width='80' height='120'/%3E%3Ctext x='50%' y='50%' font-size='12' fill='%239b9894' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
 
   return `
     <div class="activity-body rating-type" data-item-id="${itemId}">
@@ -314,10 +314,10 @@ function renderRatingBody(title, itemType, posterUrl, year, ratingScore, itemId)
       </div>
       <div class="rating-content">
         <h4>${title || "Bilinmeyen Başlık"}</h4>
-        ${year ? `<p style="color: #999; font-size: 13px; margin: 0;">${year}</p>` : ""}
+        ${year ? `<p class="year-text">${year}</p>` : ""}
         <div class="rating-score" title="${ratingScore}/10">
           ${starDisplay}<br/>
-          <span style="font-size: 16px; color: #666;">${ratingScore}/10</span>
+          <span class="score-fraction">${ratingScore}/10</span>
         </div>
       </div>
     </div>
@@ -336,14 +336,14 @@ function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, 
     : reviewText;
 
   // Placeholder poster - Check if posterUrl is valid (not empty string, null, or falsy)
-  const displayPoster = (posterUrl && posterUrl.trim() !== '') ? posterUrl : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='105'%3E%3Crect fill='%23f0f0f0' width='70' height='105'/%3E%3Ctext x='50%' y='50%' font-size='10' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
+  const displayPoster = (posterUrl && posterUrl.trim() !== '') ? posterUrl : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='105'%3E%3Crect fill='%23faf8f5' width='70' height='105'/%3E%3Ctext x='50%' y='50%' font-size='10' fill='%239b9894' text-anchor='middle' dominant-baseline='middle'%3E${itemType === 'movie' ? '🎬' : '📚'}%3C/text%3E%3C/svg%3E`;
 
   // Rating varsa yıldız göster
   let ratingHtml = "";
   if (reviewRating && reviewRating > 0) {
     const stars = Math.round((reviewRating / 10) * 5);
     const starDisplay = "★".repeat(stars) + "☆".repeat(5 - stars);
-    ratingHtml = `<div style="font-size: 14px; color: #ffc107; margin: 4px 0;">${starDisplay} <span style="color: #666; font-size: 12px;">${reviewRating}/10</span></div>`;
+    ratingHtml = `<div class="review-rating-stars">${starDisplay} <span class="score-text">${reviewRating}/10</span></div>`;
   }
 
   // Detay sayfasına link oluştur
@@ -369,8 +369,8 @@ function renderReviewBody(title, itemType, posterUrl, reviewText, reviewRating, 
  */
 function renderGenericBody(title) {
   return `
-    <div class="activity-body" style="padding: 16px;">
-      ${title ? `<p><strong>${title}</strong></p>` : '<p style="color: #999;">Aktivite detayı</p>'}
+    <div class="activity-body">
+      ${title ? `<p class="generic-activity-title"><strong>${title}</strong></p>` : '<p style="color: var(--text-muted);">Aktivite detayı</p>'}
     </div>
   `;
 }
@@ -386,16 +386,16 @@ function renderCommentReviewBody(referencedReviewText, reviewOwnerUsername, item
     : referencedReviewText || 'Yorum metni bulunamadı';
 
   return `
-    <div class="activity-body activity-comment-body" style="padding: 16px;">
-      <div style="background: #f8f9fa; padding: 12px; border-left: 3px solid #667eea; border-radius: 6px; margin-bottom: 12px;">
-        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">
+    <div class="activity-body activity-comment-body">
+      <div class="referenced-comment-box">
+        <div class="referenced-comment-header">
           💬 <strong>${reviewOwnerUsername || 'Birisinin'}</strong> yorumu:
         </div>
-        <div style="font-size: 14px; color: #555; line-height: 1.5; word-break: break-word;">
+        <div class="referenced-comment-text">
           "${truncatedText}"
         </div>
       </div>
-      <div style="font-size: 12px; color: #999;">
+      <div class="referenced-comment-item">
         📚 <em>${itemTitle}</em> hakkında
       </div>
     </div>
@@ -760,7 +760,7 @@ async function displayComments(card, reviewId, currentUserId) {
             <a href="./profile.html?user=${comment.user_id}" style="text-decoration: none; display: flex; align-items: center; gap: 8px; color: inherit;" title="${comment.username} profilini görüntüle">
               ${comment.avatar_url ? `<img src="${comment.avatar_url}" alt="${comment.username}" class="comment-avatar">` : `<span class="comment-avatar-placeholder">👤</span>`}
               <div class="comment-user-details">
-                <strong class="comment-username" style="color: #667eea; cursor: pointer;">${comment.username}</strong>
+                <strong class="comment-username">${comment.username}</strong>
                 <small class="comment-time">${formatRelativeTime(comment.created_at)}</small>
               </div>
             </a>

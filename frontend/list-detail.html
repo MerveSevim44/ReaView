@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,6 +34,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -44,6 +46,7 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+
             to {
                 opacity: 0;
                 transform: translateY(20px);
@@ -65,6 +68,7 @@
                 opacity: 0;
                 transform: translateY(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -218,6 +222,7 @@
                 opacity: 0;
                 transform: scale(0.9);
             }
+
             to {
                 opacity: 1;
                 transform: scale(1);
@@ -238,6 +243,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -271,18 +277,36 @@
             animation-fill-mode: both;
         }
 
-        .item-card:nth-child(1) { animation-delay: 0s; }
-        .item-card:nth-child(2) { animation-delay: 0.05s; }
-        .item-card:nth-child(3) { animation-delay: 0.1s; }
-        .item-card:nth-child(4) { animation-delay: 0.15s; }
-        .item-card:nth-child(5) { animation-delay: 0.2s; }
-        .item-card:nth-child(6) { animation-delay: 0.25s; }
+        .item-card:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .item-card:nth-child(2) {
+            animation-delay: 0.05s;
+        }
+
+        .item-card:nth-child(3) {
+            animation-delay: 0.1s;
+        }
+
+        .item-card:nth-child(4) {
+            animation-delay: 0.15s;
+        }
+
+        .item-card:nth-child(5) {
+            animation-delay: 0.2s;
+        }
+
+        .item-card:nth-child(6) {
+            animation-delay: 0.25s;
+        }
 
         @keyframes scaleIn {
             from {
                 opacity: 0;
                 transform: scale(0.9);
             }
+
             to {
                 opacity: 1;
                 transform: scale(1);
@@ -420,8 +444,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Error Message */
@@ -440,6 +469,7 @@
                 opacity: 0;
                 transform: translateX(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -481,6 +511,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -587,16 +618,16 @@
             opacity: 0;
         }
 
-        .radio-option input[type="radio"]:checked + .radio-label {
+        .radio-option input[type="radio"]:checked+.radio-label {
             font-weight: 600;
         }
 
-        .radio-option input[type="radio"]:checked ~ .radio-custom {
+        .radio-option input[type="radio"]:checked~.radio-custom {
             border-color: #667eea;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        .radio-option input[type="radio"]:checked ~ .radio-custom::after {
+        .radio-option input[type="radio"]:checked~.radio-custom::after {
             opacity: 1;
             transform: scale(1);
         }
@@ -722,6 +753,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navbar (will be auto-injected) -->
     <nav id="navbar" class="navbar"></nav>
@@ -733,17 +765,17 @@
                 <h2>✏️ Liste Düzenle</h2>
                 <button class="modal-close" onclick="closeEditModal()">×</button>
             </div>
-            
+
             <div class="form-group">
                 <label for="editListName">Liste Adı</label>
                 <input type="text" id="editListName" placeholder="Örn: Favorilerim">
             </div>
-            
+
             <div class="form-group">
                 <label for="editListDescription">Açıklama (İsteğe Bağlı)</label>
                 <textarea id="editListDescription" placeholder="Liste hakkında kısa bir açıklama yazın..."></textarea>
             </div>
-            
+
             <div class="form-group">
                 <label>Gizlilik Ayarı</label>
                 <div class="radio-group">
@@ -755,7 +787,7 @@
                             <span>Sadece Ben (Özel)</span>
                         </span>
                     </label>
-                    
+
                     <label class="radio-option">
                         <input type="radio" name="privacy" value="1">
                         <span class="radio-custom"></span>
@@ -764,7 +796,7 @@
                             <span>Sadece Takipçilerim</span>
                         </span>
                     </label>
-                    
+
                     <label class="radio-option">
                         <input type="radio" name="privacy" value="2">
                         <span class="radio-custom"></span>
@@ -775,7 +807,7 @@
                     </label>
                 </div>
             </div>
-            
+
             <div class="modal-actions">
                 <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">İptal</button>
                 <button class="modal-btn modal-btn-save" onclick="saveListChanges()">Kaydet</button>
@@ -860,13 +892,13 @@
                 }
 
                 console.log('📡 Liste yükleniyor:', listId);
-                
+
                 // Current user ID'sini al
                 const currentUserId = sessionManager.getCurrentUserId();
                 const url = `${API_BASE}/items/lists/${listId}/items${currentUserId ? `?current_user_id=${currentUserId}` : ''}`;
-                
+
                 console.log('📡 Liste URL:', url);
-                
+
                 const response = await fetch(url, {
                     headers: {
                         "Authorization": `Bearer ${sessionManager.getToken()}`
@@ -925,13 +957,13 @@
                 1: { icon: '👥', text: 'Takipçilerim', class: 'followers' },
                 2: { icon: '🌐', text: 'Herkese Açık', class: 'public' }
             };
-            
+
             const config = privacyConfig[privacyLevel] || privacyConfig[0];
             privacyIcon.textContent = config.icon;
             privacyText.textContent = config.text;
             privacyBadge.className = `privacy-badge ${config.class}`;
             privacyBadge.style.display = 'inline-flex';
-            
+
             // Title'ı yeniden oluştur (badge ile birlikte)
             listTitle.innerHTML = `
                 ${titleText}
@@ -999,7 +1031,7 @@
         }
 
         // Yumuşak geri gitme
-        window.goBackSmooth = function() {
+        window.goBackSmooth = function () {
             const container = document.querySelector('.container');
             if (container) {
                 container.style.animation = 'fadeOut 0.4s ease-out forwards';
@@ -1010,25 +1042,25 @@
         };
 
         // Listeden item kaldır
-        window.removeItemFromList = async function(itemId, sourceId) {
+        window.removeItemFromList = async function (itemId, sourceId) {
             if (!confirm('Bu içeriği listeden kaldırmak istediğinize emin misiniz?')) {
                 return;
             }
 
             try {
                 console.log('🗑️ Item kaldırılıyor:', { itemId, sourceId });
-                
+
                 const requestBody = {
                     action: 'remove'
                 };
-                
+
                 if (itemId) {
                     requestBody.item_id = itemId;
                 }
                 if (sourceId) {
                     requestBody.source_id = sourceId;
                 }
-                
+
                 const response = await fetch(`${API_BASE}/items/custom-lists/${listId}/items`, {
                     method: 'POST',
                     headers: {
@@ -1052,52 +1084,52 @@
         };
 
         // Modal fonksiyonları
-        window.editList = function() {
+        window.editList = function () {
             if (!listData) return;
-            
+
             const modal = document.getElementById('editModal');
             const nameInput = document.getElementById('editListName');
             const descInput = document.getElementById('editListDescription');
             const privacyRadios = document.querySelectorAll('input[name="privacy"]');
-            
+
             // Mevcut değerleri doldur
             nameInput.value = listData.list_name || '';
             descInput.value = listData.list_description || '';
-            
+
             // Gizlilik seçeneğini işaretle
             const currentPrivacy = listData.privacy_level || 0;
             privacyRadios.forEach(radio => {
                 radio.checked = (parseInt(radio.value) === currentPrivacy);
             });
-            
+
             // Modalı aç
             modal.classList.add('active');
         };
-        
-        window.closeEditModal = function() {
+
+        window.closeEditModal = function () {
             const modal = document.getElementById('editModal');
             modal.classList.remove('active');
         };
-        
-        window.saveListChanges = async function() {
+
+        window.saveListChanges = async function () {
             const nameInput = document.getElementById('editListName');
             const descInput = document.getElementById('editListDescription');
             const selectedPrivacy = document.querySelector('input[name="privacy"]:checked');
-            
+
             const newName = nameInput.value.trim();
             if (!newName) {
                 showError('Liste adı boş olamaz!');
                 return;
             }
-            
+
             if (!selectedPrivacy) {
                 showError('Lütfen bir gizlilik seçeneği seçin!');
                 return;
             }
-            
+
             const privacyLevel = parseInt(selectedPrivacy.value);
             const newDescription = descInput.value.trim();
-            
+
             try {
                 console.log('✏️ Liste düzenleniyor:', { newName, newDescription, privacyLevel });
                 const response = await fetch(`${API_BASE}/items/custom-lists/${listId}`, {
@@ -1122,7 +1154,7 @@
                 console.log('✅ Liste güncellendi');
                 closeEditModal();
                 await loadList();  // Reload to show updated data
-                
+
             } catch (err) {
                 console.error('❌ Liste düzenleme hatası:', err);
                 showError('Liste düzenlenirken hata oluştu: ' + err.message);
@@ -1130,7 +1162,7 @@
         };
 
         // Listeyi sil
-        window.deleteList = async function() {
+        window.deleteList = async function () {
             if (!confirm('Bu listeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
                 return;
             }
@@ -1165,7 +1197,7 @@
         // Sayfa yüklendiğinde
         window.addEventListener('load', async () => {
             console.log('📄 Liste detay sayfası yüklendi');
-            
+
             // Navbar'ı başlat
             try {
                 await initializeNavbar();
@@ -1173,11 +1205,11 @@
             } catch (err) {
                 console.error('❌ Navbar yüklenemedi:', err);
             }
-            
+
             // Listeyi yükle
             await loadList();
         });
-        
+
         // Sayfa kapanmadan önce hazırla
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('📄 DOMContentLoaded - Liste detay sayfası başladı');
@@ -1186,4 +1218,5 @@
         });
     </script>
 </body>
+
 </html>

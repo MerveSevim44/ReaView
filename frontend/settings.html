@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +9,7 @@
   <link rel="stylesheet" href="./css/navbar.css?v=20260817b" />
   <link rel="stylesheet" href="./css/settings.css" />
 </head>
+
 <body>
   <!-- Navbar otomatik olarak eklenecek -->
 
@@ -52,40 +54,21 @@
             <form id="profileForm" class="settings-form">
               <div class="form-group">
                 <label for="username">Kullanıcı Adı</label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  class="form-input"
-                  required
-                  minlength="3"
-                  maxlength="30"
-                />
+                <input type="text" id="username" name="username" class="form-input" required minlength="3"
+                  maxlength="30" />
                 <small class="form-hint">3-30 karakter arası olmalı</small>
               </div>
 
               <div class="form-group">
                 <label for="email">E-posta</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  class="form-input"
-                  required
-                />
+                <input type="email" id="email" name="email" class="form-input" required />
                 <small class="form-hint">Geçerli bir e-posta adresi girin</small>
               </div>
 
               <div class="form-group">
                 <label for="bio">Biyografi</label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  class="form-textarea"
-                  rows="4"
-                  maxlength="500"
-                  placeholder="Kendinizden bahsedin..."
-                ></textarea>
+                <textarea id="bio" name="bio" class="form-textarea" rows="4" maxlength="500"
+                  placeholder="Kendinizden bahsedin..."></textarea>
                 <small class="form-hint">Maksimum 500 karakter</small>
               </div>
 
@@ -99,13 +82,8 @@
 
               <div class="form-group">
                 <label for="avatarUrl">Özel Avatar URL (İsteğe bağlı)</label>
-                <input
-                  type="text"
-                  id="avatarUrl"
-                  name="avatarUrl"
-                  class="form-input"
-                  placeholder="https://example.com/avatar.jpg"
-                />
+                <input type="text" id="avatarUrl" name="avatarUrl" class="form-input"
+                  placeholder="https://example.com/avatar.jpg" />
                 <small class="form-hint">Kendi URL'nizi de girebilirsiniz</small>
               </div>
 
@@ -131,38 +109,19 @@
             <form id="passwordForm" class="settings-form">
               <div class="form-group">
                 <label for="currentPassword">Mevcut Şifre</label>
-                <input
-                  type="password"
-                  id="currentPassword"
-                  name="currentPassword"
-                  class="form-input"
-                  required
-                />
+                <input type="password" id="currentPassword" name="currentPassword" class="form-input" required />
               </div>
 
               <div class="form-group">
                 <label for="newPassword">Yeni Şifre</label>
-                <input
-                  type="password"
-                  id="newPassword"
-                  name="newPassword"
-                  class="form-input"
-                  minlength="6"
-                  required
-                />
+                <input type="password" id="newPassword" name="newPassword" class="form-input" minlength="6" required />
                 <small class="form-hint">En az 6 karakter olmalı</small>
               </div>
 
               <div class="form-group">
                 <label for="confirmPassword">Yeni Şifre (Tekrar)</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  class="form-input"
-                  minlength="6"
-                  required
-                />
+                <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" minlength="6"
+                  required />
               </div>
 
               <button type="submit" class="btn-primary">
@@ -193,11 +152,7 @@
 
             <form id="privacyForm" class="settings-form">
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="privateProfile"
-                  name="privateProfile"
-                />
+                <input type="checkbox" id="privateProfile" name="privateProfile" />
                 <label for="privateProfile">
                   <strong>Profilimi gizli yap</strong>
                   <small>Sadece takipçilerim profilimi görebilsin</small>
@@ -205,11 +160,7 @@
               </div>
 
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="hideActivity"
-                  name="hideActivity"
-                />
+                <input type="checkbox" id="hideActivity" name="hideActivity" />
                 <label for="hideActivity">
                   <strong>Aktivitelerimi gizle</strong>
                   <small>Beğenilerim ve yorumlarım başkalarına gösterilmesin</small>
@@ -217,11 +168,7 @@
               </div>
 
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="hideLibrary"
-                  name="hideLibrary"
-                />
+                <input type="checkbox" id="hideLibrary" name="hideLibrary" />
                 <label for="hideLibrary">
                   <strong>Kütüphanemi gizle</strong>
                   <small>İzlediklerim ve okumalarım sadece bana görünsün</small>
@@ -245,14 +192,9 @@
 
             <form id="notificationsForm" class="settings-form">
               <h3>E-posta Bildirimleri</h3>
-              
+
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="emailFollows"
-                  name="emailFollows"
-                  checked
-                />
+                <input type="checkbox" id="emailFollows" name="emailFollows" checked />
                 <label for="emailFollows">
                   <strong>Yeni takipçi</strong>
                   <small>Birisi sizi takip ettiğinde e-posta gönder</small>
@@ -260,12 +202,7 @@
               </div>
 
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="emailLikes"
-                  name="emailLikes"
-                  checked
-                />
+                <input type="checkbox" id="emailLikes" name="emailLikes" checked />
                 <label for="emailLikes">
                   <strong>Beğeniler</strong>
                   <small>Yorumlarınız beğenildiğinde e-posta gönder</small>
@@ -273,12 +210,7 @@
               </div>
 
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="emailComments"
-                  name="emailComments"
-                  checked
-                />
+                <input type="checkbox" id="emailComments" name="emailComments" checked />
                 <label for="emailComments">
                   <strong>Yorumlar</strong>
                   <small>Yorumlarınıza cevap geldiğinde e-posta gönder</small>
@@ -290,12 +222,7 @@
               <h3>Uygulama Bildirimleri</h3>
 
               <div class="form-group checkbox-group">
-                <input
-                  type="checkbox"
-                  id="pushNotifications"
-                  name="pushNotifications"
-                  checked
-                />
+                <input type="checkbox" id="pushNotifications" name="pushNotifications" checked />
                 <label for="pushNotifications">
                   <strong>Push bildirimleri</strong>
                   <small>Tarayıcı bildirimleri almak istiyorum</small>
@@ -324,21 +251,16 @@
           <strong>Bu işlem geri alınamaz!</strong>
         </p>
         <p>
-          Hesabınızı sildiğinizde tüm verileriniz, yorumlarınız, 
+          Hesabınızı sildiğinizde tüm verileriniz, yorumlarınız,
           listeleriniz ve aktiviteleriniz kalıcı olarak silinecektir.
         </p>
         <p>Devam etmek istediğinize emin misiniz?</p>
-        
+
         <div class="form-group">
           <label for="confirmDeleteText">
             Onaylamak için <strong>"HESABIMI SIL"</strong> yazın:
           </label>
-          <input
-            type="text"
-            id="confirmDeleteText"
-            class="form-input"
-            placeholder="HESABIMI SIL"
-          />
+          <input type="text" id="confirmDeleteText" class="form-input" placeholder="HESABIMI SIL" />
         </div>
       </div>
       <div class="modal-footer">
@@ -364,4 +286,5 @@
 
   <script type="module" src="./js/pages/settings.js"></script>
 </body>
+
 </html>
