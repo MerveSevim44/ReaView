@@ -35,6 +35,20 @@
   --accent-rose: #F5C4D8;
   --accent-sage: #B8D4BC;
   --accent-sky: #B3D9F2;
+
+  /* === BOOK & MOVIE PALETTE COMPATIBILITY === */
+  --book-lavender: #C7B3E5;
+  --book-dusty-pink: #F5C4D8;
+  --book-accent: #A78BFA;
+  --book-border: rgba(199, 179, 229, 0.3);
+  --book-text-dark: #4A4644;
+  --book-text-muted: #6B6864;
+  --movie-accent: #B3D9F2;
+  --movie-gold: #FFE5D9;
+  --movie-text-dark: #3D3935;
+  --movie-border: rgba(179, 217, 242, 0.3);
+  --movie-primary: #7C98B3;
+  --movie-sepia: #8A7B6E;
   
   /* === SHADOWS === */
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.04);

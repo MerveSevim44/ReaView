@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from typing import Optional
 from ..database import get_db
 from .. import models, schemas
+from .deps import get_current_user_optional
 from datetime import datetime
 
 router = APIRouter()
@@ -10,11 +12,19 @@ router = APIRouter()
 @router.post("/{followee_id}/follow")
 def follow_user(
     followee_id: int,
-    follower_id: int = Query(..., description="Takip eden kullanıcı ID"),
+    follower_id: Optional[int] = Query(None, description="Takip eden kullanıcı ID"),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """Bir kullanıcıyı takip et"""
-    if follower_id == followee_id:
+    effective_follower_id = current_user.user_id if current_user else follower_id
+    if not effective_follower_id:
+        raise HTTPException(status_code=401, detail="Giriş yapmanız gerekmektedir.")
+
+    if follower_id and current_user and follower_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Başka bir kullanıcı adına takip işlemi yapamazsınız.")
+
+    if effective_follower_id == followee_id:
         raise HTTPException(status_code=400, detail="Kendi kendini takip edemezsin.")
 
     # Followee kullanıcısının var olup olmadığını kontrol et
@@ -23,37 +33,45 @@ def follow_user(
         raise HTTPException(status_code=404, detail="Takip edilecek kullanıcı bulunamadı.")
 
     existing = db.query(models.Follow).filter(
-        models.Follow.follower_id == follower_id,
+        models.Follow.follower_id == effective_follower_id,
         models.Follow.followee_id == followee_id
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Zaten takip ediyorsun.")
 
-    follow = models.Follow(follower_id=follower_id, followee_id=followee_id, followed_at=datetime.utcnow())
+    follow = models.Follow(follower_id=effective_follower_id, followee_id=followee_id, followed_at=datetime.utcnow())
     db.add(follow)
     db.flush()  # Get the ID before commit
     
     # Activity kaydı oluştur
     activity = models.Activity(
-        user_id=follower_id,
+        user_id=effective_follower_id,
         activity_type="follow",
         related_user_id=followee_id
     )
     db.add(activity)
     db.commit()
     db.refresh(follow)
-    return {"message": "Takip edildi", "followee_id": followee_id, "follower_id": follower_id}
+    return {"message": "Takip edildi", "followee_id": followee_id, "follower_id": effective_follower_id}
 
 
 @router.delete("/{followee_id}/unfollow")
 def unfollow_user(
     followee_id: int,
-    follower_id: int = Query(..., description="Takip eden kullanıcı ID"),
+    follower_id: Optional[int] = Query(None, description="Takip eden kullanıcı ID"),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """Bir kullanıcıyı takip etmeyi bırak"""
+    effective_follower_id = current_user.user_id if current_user else follower_id
+    if not effective_follower_id:
+        raise HTTPException(status_code=401, detail="Giriş yapmanız gerekmektedir.")
+
+    if follower_id and current_user and follower_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Başka bir kullanıcı adına işlem yapamazsınız.")
+
     record = db.query(models.Follow).filter(
-        models.Follow.follower_id == follower_id,
+        models.Follow.follower_id == effective_follower_id,
         models.Follow.followee_id == followee_id
     ).first()
     if not record:

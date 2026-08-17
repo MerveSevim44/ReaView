@@ -40,7 +40,7 @@ const createListBtn = document.getElementById("createListBtn");
 let followingStatus = {};
 
 // Track if viewing own profile
-let isOwnProfile = false;
+let isOwnProfile = currentUserId === profileUserId;
 
 // Track user bio
 let userBio = "";
@@ -64,7 +64,7 @@ async function initializePage() {
     }
 
     // Hide follow button if viewing own profile
-    if (currentUserId === profileUserId) {
+    if (currentUserId === profileUserId && followBtn) {
       followBtn.style.display = "none";
     }
 
@@ -147,6 +147,47 @@ async function loadProfile() {
         📅 Katıldı: ${formatDate(user.created_at)}
       </p>
     `;
+
+    // Dynamic titles based on own profile vs other user's profile
+    const libraryTitle = document.querySelector(".library-section h2");
+    if (libraryTitle) {
+      libraryTitle.textContent = isOwnProfile ? "📚 Kütüphanem" : `📚 ${user.username}'in Kütüphanesi`;
+    }
+
+    const listsTitle = document.querySelector(".lists-section h2");
+    if (listsTitle) {
+      listsTitle.textContent = isOwnProfile ? "✨ Özel Listelerim" : `✨ ${user.username}'in Listeleri`;
+    }
+
+    const followTitle = document.querySelector(".follow-section h2");
+    if (followTitle) {
+      followTitle.textContent = isOwnProfile ? "👥 Takip & Takipçilerim" : "👥 Takip & Takipçiler";
+    }
+
+    const followingBtn = document.getElementById("followingBtn");
+    if (followingBtn) {
+      followingBtn.innerHTML = `<span class="btn-icon">👥</span> ${isOwnProfile ? "Takip Ettiklerim" : "Takip Ettikleri"}`;
+    }
+
+    const followersBtn = document.getElementById("followersBtn");
+    if (followersBtn) {
+      followersBtn.innerHTML = `<span class="btn-icon">👥</span> ${isOwnProfile ? "Takipçilerim" : "Takipçileri"}`;
+    }
+
+    const tabBtns = document.querySelectorAll(".library-tabs .tab-btn");
+    if (tabBtns && tabBtns.length === 4) {
+      if (isOwnProfile) {
+        tabBtns[0].textContent = "🎬 İzlediklerim";
+        tabBtns[1].textContent = "📋 İzlenecekler";
+        tabBtns[2].textContent = "📖 Okuduklarım";
+        tabBtns[3].textContent = "📝 Okunacaklar";
+      } else {
+        tabBtns[0].textContent = "🎬 İzledikleri";
+        tabBtns[1].textContent = "📋 İzleyecekleri";
+        tabBtns[2].textContent = "📖 Okudukları";
+        tabBtns[3].textContent = "📝 Okuyacakları";
+      }
+    }
 
     // Show edit button only on own profile
     const editProfileBtn = document.getElementById("editProfileBtn");
@@ -250,11 +291,12 @@ async function loadFollowingStatus() {
  * Setup follow button
  */
 function setupFollowButton() {
-  if (currentUserId === profileUserId) {
+  if (!followBtn || currentUserId === profileUserId) {
+    if (followBtn) followBtn.style.display = "none";
     return;
   }
 
-  followBtn.style.display = "block";
+  followBtn.style.display = "inline-flex";
   updateMainFollowButton();
   followBtn.addEventListener("click", toggleFollow);
 }
@@ -361,18 +403,20 @@ function renderUserCard(user) {
   return `
     <div class="user-card">
       <div class="user-info">
-        <a href="?user=${user.user_id}">@${user.username}</a>
-        <div class="email muted">${user.email}</div>
+        <a href="profile.html?user=${user.user_id}">@${user.username}</a>
+        <div class="email muted">${user.email || ""}</div>
       </div>
       ${
-        !isCurrentUser
-          ? `
+        isCurrentUser
+          ? `<span class="user-badge-self">Siz</span>`
+          : isOwnProfile
+            ? `
         <button class="follow-btn ${isFollowing ? "following" : "follow"}"
                 data-user-id="${user.user_id}">
           ${isFollowing ? "✓ Takip Ediliyor" : "Takip Et"}
         </button>
       `
-          : `<span class="muted" style="font-size: 12px;">Siz</span>`
+            : ""
       }
     </div>
   `;
