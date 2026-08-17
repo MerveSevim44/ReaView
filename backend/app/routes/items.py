@@ -4,7 +4,8 @@ from sqlalchemy import text, desc, func
 from ..database import get_db
 from .. import models, schemas
 from ..services.external_api import get_tmdb_reviews, get_google_books_reviews, search_tmdb, search_google_books, search_openlibrary
-from .deps import get_current_user
+from .deps import get_current_user, get_current_user_optional
+from typing import Optional
 import requests
 import os
 
@@ -1613,46 +1614,48 @@ def update_custom_list(list_id: int, data: dict = Body(...), db: Session = Depen
 def get_custom_lists(
     user_id: int, 
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     """
     Kullanıcının özel listelerini getir
     Privacy levels: 0=private, 1=followers, 2=public
     - Kendi listeleri: Hepsini göster
     - Başkasının listeleri: privacy_level'e göre filtrele
-    
-    current_user_id artık token'dan otomatik alınıyor
     """
     try:
-        current_user_id = current_user.user_id
-        is_owner = current_user_id == user_id
+        current_user_id = current_user.user_id if current_user else None
+        is_owner = bool(current_user_id and current_user_id == user_id)
         
         if is_owner:
             # Kendi listeleri - hepsini göster
             lists = db.query(models.CustomList).filter(
                 models.CustomList.user_id == user_id
-            ).all()
+            ).order_by(models.CustomList.created_at.desc()).all()
         else:
             # Başkasının profili - gizlilik kontrolü
             # Önce takipçi mi kontrol et
             is_follower = False
             if current_user_id:
-                follow_record = db.query(models.Follow).filter(
-                    models.Follow.follower_id == current_user_id,
-                    models.Follow.followed_id == user_id
-                ).first()
-                is_follower = follow_record is not None
+                try:
+                    follow_record = db.query(models.Follow).filter(
+                        models.Follow.follower_id == current_user_id,
+                        models.Follow.followee_id == user_id
+                    ).first()
+                    is_follower = follow_record is not None
+                except Exception:
+                    is_follower = False
             
             # Tüm kullanıcı listelerini çek ve Python tarafında filtrele
             # (privacy_level NULL olabilir - SQLAlchemy NULL karşılaştırma sorunlarını önler)
             all_lists = db.query(models.CustomList).filter(
                 models.CustomList.user_id == user_id
-            ).all()
+            ).order_by(models.CustomList.created_at.desc()).all()
             
             lists = []
             for lst in all_lists:
-                # privacy_level None ise private (0) olarak değerlendir
-                pl = lst.privacy_level if lst.privacy_level is not None else 0
+                pl = lst.privacy_level
+                if pl is None:
+                    pl = 2 if getattr(lst, 'is_public', 0) == 1 else 0
                 
                 if is_follower:
                     # Takipçi ise: followers (1) ve public (2) listeleri göster
@@ -1665,19 +1668,30 @@ def get_custom_lists(
         
         custom_lists = []
         for lst in lists:
-            items = db.query(models.ListItem).filter(
-                models.ListItem.list_id == lst.list_id
-            ).count()
+            item_count = 0
+            try:
+                item_count = db.query(models.ListItem).filter(
+                    models.ListItem.list_id == lst.list_id
+                ).count()
+            except Exception:
+                item_count = 0
+            
+            created_at_str = lst.created_at.isoformat() if hasattr(lst, 'created_at') and lst.created_at else None
+            updated_at_str = lst.updated_at.isoformat() if hasattr(lst, 'updated_at') and lst.updated_at else None
+            
+            pl = lst.privacy_level
+            if pl is None:
+                pl = 2 if getattr(lst, 'is_public', 0) == 1 else 0
             
             custom_lists.append({
                 "list_id": lst.list_id,
                 "name": lst.name,
                 "description": lst.description,
-                "is_public": lst.is_public if hasattr(lst, 'is_public') else 0,
-                "privacy_level": lst.privacy_level if lst.privacy_level is not None else 0,
-                "item_count": items,
-                "created_at": lst.created_at,
-                "updated_at": lst.updated_at
+                "is_public": 1 if pl == 2 else 0,
+                "privacy_level": pl,
+                "item_count": item_count,
+                "created_at": created_at_str,
+                "updated_at": updated_at_str
             })
         
         return {
@@ -1689,6 +1703,8 @@ def get_custom_lists(
             "total": len(custom_lists)
         }
     
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         error_detail = str(e)
@@ -2034,7 +2050,8 @@ def delete_custom_list(list_id: int, db: Session = Depends(get_db)):
 def get_list_items(
     list_id: int, 
     current_user_id: int = Query(None, description="İsteği yapan kullanıcının ID'si"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     """
     Liste içindeki tüm itemleri getir
@@ -2054,21 +2071,26 @@ def get_list_items(
         if not custom_list:
             raise HTTPException(status_code=404, detail="Liste bulunamadı")
         
-        # Gizlilik kontrolü
-        is_owner = current_user_id and current_user_id == custom_list.user_id
+        effective_user_id = current_user.user_id if current_user else current_user_id
+        is_owner = bool(effective_user_id and effective_user_id == custom_list.user_id)
         
         if not is_owner:
             # Takipçi mi kontrol et
             is_follower = False
-            if current_user_id:
-                follow_record = db.query(models.Follow).filter(
-                    models.Follow.follower_id == current_user_id,
-                    models.Follow.followed_id == custom_list.user_id
-                ).first()
-                is_follower = follow_record is not None
+            if effective_user_id:
+                try:
+                    follow_record = db.query(models.Follow).filter(
+                        models.Follow.follower_id == effective_user_id,
+                        models.Follow.followee_id == custom_list.user_id
+                    ).first()
+                    is_follower = follow_record is not None
+                except Exception:
+                    is_follower = False
             
             # Privacy kontrolü
             privacy_level = custom_list.privacy_level
+            if privacy_level is None:
+                privacy_level = 2 if getattr(custom_list, 'is_public', 0) == 1 else 0
             
             if privacy_level == 0:  # Private
                 raise HTTPException(
@@ -2130,17 +2152,24 @@ def get_list_items(
             
             items.append(item_data)
         
+        created_at_str = custom_list.created_at.isoformat() if hasattr(custom_list, 'created_at') and custom_list.created_at else None
+        updated_at_str = custom_list.updated_at.isoformat() if hasattr(custom_list, 'updated_at') and custom_list.updated_at else None
+        
+        pl = custom_list.privacy_level
+        if pl is None:
+            pl = 2 if getattr(custom_list, 'is_public', 0) == 1 else 0
+        
         return {
             "success": True,
             "list_id": list_id,
             "list_name": custom_list.name,
             "list_description": custom_list.description,
-            "is_public": custom_list.is_public,
-            "privacy_level": custom_list.privacy_level,
+            "is_public": 1 if pl == 2 else 0,
+            "privacy_level": pl,
             "user_id": custom_list.user_id,
             "is_owner": is_owner,
-            "created_at": custom_list.created_at.isoformat() if custom_list.created_at else None,
-            "updated_at": custom_list.updated_at.isoformat() if custom_list.updated_at else None,
+            "created_at": created_at_str,
+            "updated_at": updated_at_str,
             "items": items,
             "item_count": len(items)
         }

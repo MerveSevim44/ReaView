@@ -13,38 +13,73 @@ import { getUserInitials } from "../utils/formatters.js";
 export function initializeNavbar() {
   // Don't show navbar on auth pages (login, register, forgot-password, reset-password)
   const currentPage = window.location.pathname.split("/").pop() || "";
-  const authPages = ["login.html", "register.html", "forgot-password.html", "reset-password.html",
-                     "login", "register", "forgot-password", "reset-password"];
+  const authPages = [
+    "login.html",
+    "register.html",
+    "forgot-password.html",
+    "reset-password.html",
+    "login",
+    "register",
+    "forgot-password",
+    "reset-password",
+  ];
   if (authPages.includes(currentPage)) {
     return;
   }
 
+  // Inject critical runtime styles to prevent any overlay/pseudo-element blocking clicks
+  if (!document.getElementById("navbar-fix-style")) {
+    const fixStyle = document.createElement("style");
+    fixStyle.id = "navbar-fix-style";
+    fixStyle.textContent = `
+      .navbar::before, .navbar::after {
+        display: none !important;
+        content: none !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      .navbar {
+        position: sticky !important;
+        z-index: 1000 !important;
+        pointer-events: auto !important;
+      }
+      .navbar-user, .auth-buttons, .btn-login, .btn-register, .navbar-brand, .navbar-nav, .navbar-nav a {
+        position: relative !important;
+        z-index: 10001 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+      }
+    `;
+    document.head.appendChild(fixStyle);
+  }
+
   const navbarContent = `
-    <a href="./feed.html" class="navbar-brand">
+    <a href="./feed.html" class="navbar-brand" style="position: relative; z-index: 10001; pointer-events: auto;">
       📚 BiblioNet
     </a>
 
-    <div class="navbar-center">
-      <ul class="navbar-nav">
+    <div class="navbar-center" style="position: relative; z-index: 10001; pointer-events: auto;">
+      <ul class="navbar-nav" style="position: relative; z-index: 10001; pointer-events: auto;">
         <li><a href="./feed.html" class="nav-link">📰 Akış</a></li>
         <li><a href="./explore.html" class="nav-link">🔍 Keşfet</a></li>
       </ul>
     </div>
 
-    <div class="navbar-user">
+    <div class="navbar-user" style="position: relative; z-index: 10001; pointer-events: auto;">
       <!-- Show when not logged in -->
-      <div class="auth-buttons" id="authButtons">
-        <a href="./login.html" class="btn-login">🔐 Giriş Yap</a>
-        <a href="./login.html" class="btn-register">✍️ Kayıt Ol</a>
+      <div class="auth-buttons" id="authButtons" style="display: flex; gap: 10px; position: relative; z-index: 10001; pointer-events: auto;">
+        <a href="./login.html" class="btn-login" id="navBtnLogin" data-auth-link="login" style="position: relative; z-index: 10002; pointer-events: auto; cursor: pointer;">🔐 Giriş Yap</a>
+        <a href="./register.html" class="btn-register" id="navBtnRegister" data-auth-link="register" style="position: relative; z-index: 10002; pointer-events: auto; cursor: pointer;">✍️ Kayıt Ol</a>
       </div>
 
       <!-- Show when logged in -->
-      <div class="user-dropdown" id="userDropdown" style="display: none;">
-        <div class="user-info" id="userInfo">
+      <div class="user-dropdown" id="userDropdown" style="display: none; position: relative; z-index: 10001;">
+        <div class="user-info" id="userInfo" style="position: relative; z-index: 10002; cursor: pointer;">
           <div class="user-avatar" id="userAvatar">?</div>
           <div class="user-name" id="userName">Yükleniyor...</div>
         </div>
-        <div class="dropdown-menu" id="dropdownMenu">
+        <div class="dropdown-menu" id="dropdownMenu" style="position: absolute; z-index: 10005;">
           <a href="./profile.html">👤 Profilim</a>
           <a href="./feed.html">📰 Akışım</a>
           <div class="dropdown-divider"></div>
@@ -57,7 +92,7 @@ export function initializeNavbar() {
 
   // Check if navbar already exists on the page
   let existingNavbar = document.querySelector(".navbar");
-  
+
   if (existingNavbar) {
     // Navbar already exists, just update its content
     existingNavbar.innerHTML = navbarContent;
@@ -76,10 +111,11 @@ export function initializeNavbar() {
   }
 
   // Add CSS file if not already added
-  if (!document.querySelector('link[href="./css/navbar.css"]')) {
+  const existingLink = document.querySelector('link[href*="navbar.css"]');
+  if (!existingLink) {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "./css/navbar.css";
+    link.href = "./css/navbar.css?v=20260817b";
     document.head.appendChild(link);
   }
 
@@ -101,6 +137,39 @@ function setupNavbarEvents() {
   const userInfo = document.getElementById("userInfo");
   const dropdownMenu = document.getElementById("dropdownMenu");
   const logoutBtn = document.getElementById("logoutBtn");
+
+  const btnLogin = document.getElementById("navBtnLogin") || document.querySelector(".btn-login");
+  if (btnLogin) {
+    const goToLogin = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = "./login.html";
+    };
+    btnLogin.onclick = goToLogin;
+    btnLogin.addEventListener("click", goToLogin);
+  }
+
+  const btnRegister = document.getElementById("navBtnRegister") || document.querySelector(".btn-register");
+  if (btnRegister) {
+    const goToRegister = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = "./register.html";
+    };
+    btnRegister.onclick = goToRegister;
+    btnRegister.addEventListener("click", goToRegister);
+  }
+
+  document.querySelectorAll("[data-auth-link]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const href = link.getAttribute("href");
+      if (href) {
+        window.location.href = href;
+      }
+    });
+  });
 
   // Toggle dropdown menu
   userInfo?.addEventListener("click", (e) => {
@@ -138,13 +207,15 @@ function updateNavbarUser() {
 
   if (currentUser) {
     // User is logged in
-    authButtons.style.display = "none";
-    userDropdown.style.display = "block";
+    if (authButtons) authButtons.style.display = "none";
+    if (userDropdown) userDropdown.style.display = "block";
 
     // Display user info
-    userName.textContent = currentUser.username || "User";
-    const initials = getUserInitials(currentUser.username || "U");
-    userAvatar.textContent = initials;
+    if (userName) userName.textContent = currentUser.username || "User";
+    if (userAvatar) {
+      const initials = getUserInitials(currentUser.username || "U");
+      userAvatar.textContent = initials;
+    }
 
     // Update profile link
     const profileLink = document.querySelector('a[href="./profile.html"]');
@@ -154,8 +225,8 @@ function updateNavbarUser() {
     }
   } else {
     // User is not logged in
-    authButtons.style.display = "flex";
-    userDropdown.style.display = "none";
+    if (authButtons) authButtons.style.display = "flex";
+    if (userDropdown) userDropdown.style.display = "none";
   }
 }
 

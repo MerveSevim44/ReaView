@@ -564,16 +564,18 @@ async function loadCustomLists() {
     const url2 = `${API_BASE}/items/custom-lists/${profileUserId}`;
     console.log(`📡 Özel Listeler yükleniyor: ${url2}`);
     
-    const response = await fetch(url2, {
-      headers: {
-        "Authorization": `Bearer ${sessionManager.getToken()}`
-      }
-    });
+    const headers = {};
+    const token = sessionManager.getToken();
+    if (token && token !== "null" && token !== "undefined") {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url2, { headers });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error(`❌ Özel Listeler yükleme hatası: ${response.status}`, errorData);
-      throw new Error("Listeler yüklenemedi");
+      throw new Error(errorData.detail || "Listeler yüklenemedi");
     }
     console.log("✅ Özel Listeler başarıyla yüklendi");
     

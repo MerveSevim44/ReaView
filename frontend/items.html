@@ -991,16 +991,43 @@
     const API_URL = `${API_BASE}/items`;
 
     let currentItem = null;
-    let currentUser = { user_id: 1, username: "demo_user" };
+    let currentUser = null;
+    let authToken = null;
     
     // Load current user from session (localStorage)
     try {
       const savedUser = localStorage.getItem("currentUser");
+      const savedToken = localStorage.getItem("authToken");
       if (savedUser) {
         currentUser = JSON.parse(savedUser);
       }
+      if (savedToken) {
+        authToken = savedToken;
+      }
     } catch (error) {
       console.error("Oturum yükleme hatası:", error);
+    }
+
+    function isLoggedIn() {
+      return currentUser !== null && authToken !== null;
+    }
+
+    function getAuthHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      return headers;
+    }
+
+    function requireLogin(actionName) {
+      if (!isLoggedIn()) {
+        if (confirm(`${actionName} için giriş yapmanız gerekiyor. Giriş sayfasına yönlendirilsin mi?`)) {
+          window.location.href = './login.html';
+        }
+        return false;
+      }
+      return true;
     }
     
     let selectedRating = 0;
@@ -1137,14 +1164,15 @@
                   </div>
                 </div>
 
-                <div class="rating-input-group">
+                <div class="rating-input-group" id="ratingInputGroup" style="${isLoggedIn() ? '' : 'display:none;'}">
                   <label class="rating-label">Puan Ver:</label>
                   <div class="rating-stars-input" id="ratingInput"></div>
                   <button class="submit-btn" onclick="submitRating()">Gönder</button>
                 </div>
+                ${!isLoggedIn() ? '<p style="color:#999; font-size:13px; margin:8px 0;">Puan vermek için <a href="./login.html" style="color:#6C63FF;">giriş yapın</a></p>' : ''}
               </div>
 
-              <div class="action-buttons">
+              <div class="action-buttons" id="actionButtons" style="${isLoggedIn() ? '' : 'display:none;'}">
                 ${item.item_type === 'book' ? `
                   <button class="action-btn" onclick="toggleLibrary('read')">📚 Okudum</button>
                   <button class="action-btn" onclick="toggleLibrary('toread')">📖 Okunacak</button>
@@ -1154,6 +1182,7 @@
                 `}
                 <button class="action-btn secondary" onclick="addCustomList()">📋 Özel Listeye</button>
               </div>
+              ${!isLoggedIn() ? '<p style="color:#999; font-size:13px; margin:8px 0;">Kütüphane ve liste işlemleri için <a href="./login.html" style="color:#6C63FF;">giriş yapın</a></p>' : ''}
             </div>
           </div>
 
@@ -1172,10 +1201,16 @@
           <div class="reviews-section" data-type="${item.item_type || ''}">
             <div class="section-title">💬 Yorumlar</div>
             
+            ${isLoggedIn() ? `
             <div class="review-form">
               <textarea id="commentText" placeholder="Yorumunuzu yazın..."></textarea>
               <button class="submit-btn" onclick="submitComment()">Gönder</button>
             </div>
+            ` : `
+            <div class="review-form" style="text-align:center; padding:16px;">
+              <p style="color:#999; margin:0;">Yorum yapmak için <a href="./login.html" style="color:#6C63FF; font-weight:600;">giriş yapın</a></p>
+            </div>
+            `}
 
             <div id="commentsList" class="comments-list"></div>
           </div>
@@ -1212,7 +1247,9 @@
     }
 
     function submitRating() {
-      if (!selectedRating) {
+      if (!requireLogin('Puan vermek')) return;
+      
+      if (selectedRating === 0) {
         alert('Lütfen bir puan seçin');
         return;
       }
@@ -1256,7 +1293,7 @@
           
           const response = await fetch(`${API_BASE}/items/api/rating/${sourceId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               user_id: currentUser.user_id,
               rating: rating,
@@ -1300,7 +1337,7 @@
           console.log(`📤 DB Puanı Kaydediliyor: /items/${itemId}/rate`);
           const response = await fetch(`${API_URL}/${itemId}/rate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               user_id: currentUser.user_id,
               rating: rating
@@ -1327,6 +1364,8 @@
     }
 
     function toggleLibrary(action) {
+      if (!requireLogin('Kütüphane işlemi')) return;
+      
       console.log(`📚 ${action} işlemi:`, 'isExternalItem:', isExternalItem);
       
       // Status'u action'dan derive et
@@ -1367,7 +1406,7 @@
           
           fetch(`${API_URL}/api/library/${sourceId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
           })
           .then(res => res.json())
@@ -1395,7 +1434,7 @@
           
           fetch(`${API_URL}/${currentItem.item_id}/library`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
           })
           .then(res => res.json())
@@ -1421,11 +1460,15 @@
     let currentListSort = 'recent'; // Default sort: recently created first
 
     async function addCustomList() {
+      if (!requireLogin('Özel listeye eklemek')) return;
+      
       console.log('📋 Özel listeye ekle - Modal açılıyor');
       
       try {
         // Kullanıcının özel listelerini getir
-        const response = await fetch(`${API_URL}/custom-lists/${currentUser.user_id}`);
+        const response = await fetch(`${API_URL}/custom-lists/${currentUser.user_id}`, {
+          headers: getAuthHeaders()
+        });
         const data = await response.json();
         
         const existingListsDiv = document.getElementById('existingLists');
@@ -1526,7 +1569,7 @@
         // Yeni liste oluştur
         const createResponse = await fetch(`${API_URL}/custom-lists`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             user_id: currentUser.user_id,
             name: newListName,
@@ -1571,7 +1614,7 @@
         // Item'i listeye ekle
         const addResponse = await fetch(`${API_URL}/custom-lists/${listId}/items`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             item_id: itemIdToAdd,
             source_id: sourceIdToAdd,
@@ -1607,7 +1650,7 @@
       try {
         const response = await fetch(`${API_URL}/custom-lists/${listId}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' }
+          headers: getAuthHeaders()
         });
 
         const data = await response.json();
@@ -1869,6 +1912,8 @@
     }
 
     async function submitComment() {
+      if (!requireLogin('Yorum yapmak')) return;
+      
       const text = document.getElementById('commentText')?.value.trim();
       if (!text) {
         alert('Lütfen bir yorum yazın');
@@ -1898,7 +1943,7 @@
           
           const response = await fetch(`${API_BASE}/items/api/comments/${sourceId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               user_id: currentUser.user_id,
               review_text: text,
@@ -1931,7 +1976,7 @@
         try {
           const response = await fetch(`${API_URL}/${currentItem.item_id}/comments`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               user_id: currentUser.user_id,
               item_id: currentItem.item_id,
