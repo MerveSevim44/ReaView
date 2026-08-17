@@ -881,45 +881,32 @@
         `;
       });
 
-      // 3️⃣ BAŞLANGIÇ KONTROLÜü
-      if (!sessionManager.isLoggedIn()) {
-        resultsContainer.innerHTML = `
-          <div class="auth-message">
-            <h3>👋 Hoş geldiniz!</h3>
-            <p>Keşfet özelliğini kullanmak için lütfen giriş yapınız.</p>
-            <a href="./login.html">Giriş Yap veya Kayıt Ol</a>
-          </div>
-        `;
-        topRatedContainer.innerHTML = resultsContainer.innerHTML;
-        mostPopularContainer.innerHTML = resultsContainer.innerHTML;
-      } else {
-        // Önceki arama sonuçlarını restore et
-        const savedState = sessionStorage.getItem(STORAGE_KEY);
-        if (savedState) {
-          try {
-            const state = JSON.parse(savedState);
-            searchInput.value = state.query || '';
-            filterType.value = state.filters?.type || '';
-            filterYear.value = state.filters?.year || '';
-            filterRating.value = state.filters?.rating || '';
-            sortBy.value = state.filters?.sort || 'relevance';
-            
-            const savedItems = sessionStorage.getItem(ITEMS_STORAGE_KEY);
-            if (savedItems) {
-              currentItems = JSON.parse(savedItems);
-              renderResults(currentItems, resultsContainer);
-              console.log('✅ Önceki arama geri yüklendi:', state.query);
-            }
-          } catch (e) {
-            console.error('Arama restore hatası:', e);
+      // Explore browsing and search are public; restore state and load showcases for guests too.
+      const savedState = sessionStorage.getItem(STORAGE_KEY);
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          searchInput.value = state.query || '';
+          filterType.value = state.filters?.type || '';
+          filterYear.value = state.filters?.year || '';
+          filterRating.value = state.filters?.rating || '';
+          sortBy.value = state.filters?.sort || 'relevance';
+
+          const savedItems = sessionStorage.getItem(ITEMS_STORAGE_KEY);
+          if (savedItems) {
+            currentItems = JSON.parse(savedItems);
+            renderResults(currentItems, resultsContainer);
+            console.log('✅ Önceki arama geri yüklendi:', state.query);
           }
+        } catch (e) {
+          console.error('Arama restore hatası:', e);
         }
-        
-        // VİTRİN BÖLÜMLERINI HER ZAMAN YÜKLEYİ (önceki arama olsa da olmasada)
-        console.log('🎬 Loading showcases...');
-        await loadTopRated();
-        await loadPopular();
       }
+
+      // VİTRİN BÖLÜMLERINI HER ZAMAN YÜKLE (önceki arama olsa da olmasada)
+      console.log('🎬 Loading showcases...');
+      await loadTopRated();
+      await loadPopular();
     });
   </script>
 </body>

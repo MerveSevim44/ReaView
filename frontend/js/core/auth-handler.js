@@ -66,9 +66,16 @@ export function isAuthenticated() {
 }
 
 /**
- * Require authentication (redirect if not logged in)
+ * Require authentication (redirect if not logged in).
+ * Feed and explore are intentionally public so guests can browse them.
  */
-export function requireAuth() {
+export function requireAuth(publicPages = ["feed.html", "explore.html"]) {
+  const currentPage = window.location.pathname.split("/").pop() || "";
+
+  if (publicPages.includes(currentPage)) {
+    return true;
+  }
+
   if (!sessionManager.isLoggedIn()) {
     window.location.href = "./login.html";
     return false;

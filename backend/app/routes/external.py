@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/search")
-def external_search(type: str = Query(..., regex="^(movie|book)$"), query: str = Query(..., min_length=2)):
+def external_search(type: str = Query(..., pattern="^(movie|book)$"), query: str = Query(..., min_length=2)):
     """Search external APIs for movies or books. Returns multiple results."""
     if type == "movie":
         return search_tmdb(query)
@@ -23,7 +23,7 @@ def external_search(type: str = Query(..., regex="^(movie|book)$"), query: str =
 
 @router.post("/import")
 def import_item(
-    type: str = Query(..., regex="^(movie|book)$"),
+    type: str = Query(..., pattern="^(movie|book)$"),
     query: str = Query(..., min_length=2),
     db: Session = Depends(get_db)
 ):

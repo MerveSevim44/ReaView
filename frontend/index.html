@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BiblioNet • Kitap Severler Topluluğu</title>
+  <script>
+    window.location.replace("./feed.html");
+  </script>
   
   <style>
     * {
@@ -174,13 +177,5 @@
     </div>
   </div>
 
-  <script type="module">
-    import { sessionManager } from "./js/core/session-manager.js";
-
-    // Redirect to feed if already logged in
-    if (sessionManager.isLoggedIn()) {
-      window.location.href = "./feed.html";
-    }
-  </script>
 </body>
 </html>

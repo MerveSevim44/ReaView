@@ -45,12 +45,7 @@ window.addEventListener("DOMContentLoaded", async () => {
  */
 async function initializeFeed() {
   try {
-    if (!sessionManager.isLoggedIn()) {
-      showAuthMessage();
-      return;
-    }
-
-    console.log("✅ Kullanıcı giriş yaptı, akış yükleniyor...");
+    console.log(sessionManager.isLoggedIn() ? "✅ Kullanıcı giriş yaptı, akış yükleniyor..." : "👋 Misafir akışı yükleniyor...");
     await loadFeed();
 
     // "Daha Fazla Yükle" butonuna listener ekle
@@ -89,6 +84,10 @@ function showAuthMessage() {
   `;
 }
 
+function promptLogin(message) {
+  alert(`❌ ${message}`);
+}
+
 /**
  * İlk sayfadaki aktiviteleri yükle
  */
@@ -96,12 +95,7 @@ async function loadFeed() {
   try {
     feedContainer.innerHTML = '<div class="loading">📡 Akış yükleniyor...</div>';
 
-    if (!sessionManager.isLoggedIn()) {
-      showAuthMessage();
-      return;
-    }
-
-    // İlk sayfayı getir (skip=0, limit=15)
+    // İlk sayfayı getir (skip=0, limit=15). This endpoint is public.
     // user_id artık token'dan otomatik alınıyor
     const activities = await getFeed(0, pageSize);
     
@@ -545,7 +539,7 @@ async function handleLike(e) {
   const currentUser = sessionManager.getCurrentUser();
 
   if (!currentUser) {
-    alert("❌ Beğenmek için giriş yapmalısınız");
+    promptLogin("Beğenmek için giriş yapmalısınız");
     return;
   }
 
@@ -659,6 +653,13 @@ async function handleLike(e) {
  */
 async function handleComment(e) {
   e.preventDefault();
+  const currentUser = sessionManager.getCurrentUser();
+
+  if (!currentUser) {
+    promptLogin("Yorum yapmak için giriş yapmalısınız");
+    return;
+  }
+
   const commentText = prompt("💬 Yorum yazınız:");
 
   if (!commentText || !commentText.trim()) {
@@ -671,13 +672,6 @@ async function handleComment(e) {
   const activityType = card.getAttribute("data-activity-type");
   const commentCount = btn.querySelector(".comment-count");
   const commentIcon = btn.querySelector(".comment-icon");
-  const currentUser = sessionManager.getCurrentUser();
-
-  if (!currentUser) {
-    alert("❌ Yorum yapmak için giriş yapmalısınız");
-    return;
-  }
-
   try {
     let endpoint = "";
     let reviewId = card.getAttribute("data-review-id");
@@ -834,6 +828,11 @@ window.deleteComment = async function(commentId, reviewId) {
  */
 function handleShare(e) {
   e.preventDefault();
+  if (!sessionManager.isLoggedIn()) {
+    promptLogin("Paylaşmak için giriş yapmalısınız");
+    return;
+  }
+
   const card = e.target.closest(".activity-card");
   const username = card.querySelector(".activity-username").textContent;
   const title = card.querySelector("h4")?.textContent || "Aktivite";

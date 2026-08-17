@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from ..database import get_db
@@ -8,6 +8,16 @@ import requests
 import os
 
 router = APIRouter()
+
+
+def get_optional_current_user(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Allow anonymous feed reads while still validating supplied tokens."""
+    if not authorization:
+        return None
+    return verify_current_user(authorization, db)
 
 def enrich_poster_if_missing(poster_url: str, title: str, external_api_source: str, external_api_id: str) -> str:
     """
@@ -72,7 +82,7 @@ def get_feed(
     skip: int = 0,
     limit: int = 15,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(verify_current_user)
+    current_user: models.User = Depends(get_optional_current_user)
 ):
     """
     Feed = takip edilen kullanıcıların aktiviteleri (activities tablosundan)
@@ -81,7 +91,7 @@ def get_feed(
     user_id artık token'dan otomatik alınıyor
     """
     
-    user_id = current_user.user_id
+    user_id = current_user.user_id if current_user else 0
     
     query = text("""
         SELECT 
@@ -168,15 +178,20 @@ def get_feed(
         LEFT JOIN items ri ON ri.item_id = r.item_id
         LEFT JOIN ratings rat ON rat.user_id = a.user_id AND rat.item_id = a.item_id
         LEFT JOIN users ru ON ru.user_id = r.user_id
-        WHERE a.user_id IN (
+        WHERE (:guest = 1 OR a.user_id IN (
             SELECT followee_id FROM follows WHERE follower_id = :uid
-        )
+        ))
         AND a.activity_type IN ('review', 'rating', 'like_review', 'like_item', 'comment_review')
         ORDER BY a.created_at DESC
         LIMIT :limit OFFSET :skip;
     """)
 
-    result = db.execute(query, {"uid": user_id, "limit": limit, "skip": skip}).fetchall()
+    result = db.execute(query, {
+        "uid": user_id,
+        "guest": 1 if current_user is None else 0,
+        "limit": limit,
+        "skip": skip
+    }).fetchall()
     activities = [dict(r._mapping) for r in result]
     
     # Enrich poster_url if missing
